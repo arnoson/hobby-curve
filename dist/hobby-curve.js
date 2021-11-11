@@ -1,4 +1,4 @@
-// utils.ts
+// src/utils.ts
 var Type;
 (function(Type2) {
   Type2[Type2["Endpoint"] = 0] = "Endpoint";
@@ -17,56 +17,48 @@ var abGreaterCd = (a, b, c, d) => a * b > c * d;
 var sinCos = (x) => [Math.cos(x), Math.sin(x)];
 var velocity = (st, ct, sf, cf, t) => Math.min(4, (2 + Math.sqrt(2) * (st - sf / 16) * (sf - st / 16) * (ct - cf)) / (1.5 * t * (2 + (Math.sqrt(5) - 1) * ct + (3 - Math.sqrt(5)) * cf)));
 
-// hobby-curve.ts
+// src/setControls.ts
+var setControls = (knot, st, ct, sf, cf) => {
+  const nextKnot = knot.next;
+  let lt = Math.abs(nextKnot.leftY);
+  let rt = Math.abs(knot.rightY);
+  let rr = velocity(st, ct, sf, cf, rt);
+  let ss = velocity(sf, cf, st, ct, lt);
+  if (knot.rightY < 0 || nextKnot.leftY < 0) {
+    if (st >= 0 && sf >= 0 || st <= 0 && sf <= 0) {
+      let sine = Math.abs(st) * cf + Math.abs(sf) * ct;
+      if (sine > 0) {
+        sine *= 1.00024414062;
+        if (knot.rightY < 0) {
+          if (!abGreaterCd(Math.abs(sf), 1, rr, sine)) {
+            rr = Math.abs(sf) / sine;
+          }
+        }
+        if (nextKnot.leftY < 0) {
+          if (!abGreaterCd(Math.abs(st), 1, ss, sine)) {
+            ss = Math.abs(st) / sine;
+          }
+        }
+      }
+    }
+  }
+  knot.rightX = knot.x + (knot.deltaX * ct - knot.deltaY * st) * rr;
+  knot.rightY = knot.y + (knot.deltaY * ct + knot.deltaX * st) * rr;
+  knot.rightType = Type.Explicit;
+  nextKnot.leftX = nextKnot.x - (knot.deltaX * cf + knot.deltaY * sf) * ss;
+  nextKnot.leftY = nextKnot.y - (knot.deltaY * cf - knot.deltaX * sf) * ss;
+  nextKnot.leftType = Type.Explicit;
+};
+
+// src/solveChoices.ts
 var UNITY = 1;
-var calcDeltaValues = (knots, cyclic) => {
-  const deltaX = [];
-  const deltaY = [];
-  const delta = [];
-  const end = cyclic ? knots.length : knots.length - 1;
-  for (let i = 0; i < end; i++) {
-    const knot = knots[i];
-    const nextKnot = knots[i + 1] ?? knots[0];
-    knot.deltaX = nextKnot.x - knot.x;
-    knot.deltaY = nextKnot.y - knot.y;
-    knot.delta = Math.hypot(knot.deltaX, knot.deltaY);
-    deltaX[i] = nextKnot.x - knot.x;
-    deltaY[i] = nextKnot.y - knot.y;
-    delta[i] = Math.hypot(deltaX[i], deltaY[i]);
-  }
-  return [deltaX, deltaY, delta];
-};
-var calcPsiValues = (knots, deltaX, deltaY, delta, cyclic) => {
-  const psi = [];
-  const [start, end] = cyclic ? [0, knots.length] : [1, knots.length - 1];
-  for (let i = start; i < end; i++) {
-    const lastIndex = i === 0 ? knots.length - 1 : i - 1;
-    const sin = deltaY[lastIndex] / delta[lastIndex];
-    const cos = deltaX[lastIndex] / delta[lastIndex];
-    const value = Math.atan2(deltaY[i] * cos - deltaX[i] * sin, deltaX[i] * cos + deltaY[i] * sin);
-    knots[i].psi = value;
-    psi.push(value);
-  }
-  return psi;
-};
-var makeChoices = (knots, cyclic = true) => {
-  const [deltaX, deltaY, delta] = calcDeltaValues(knots, cyclic);
-  const psi = calcPsiValues(knots, deltaX, deltaY, delta, cyclic);
-  if (cyclic) {
-    psi.push(psi.shift());
-  }
-  psi.push(cyclic ? psi[0] : 0);
-  psi.unshift(0);
-  console.log(psi);
-  console.log(knots.map((knot) => knot.psi));
-  solveChoices(knots, psi, cyclic);
-};
-var solveChoices = function(knots, psi, cyclic) {
+var solveChoices = function(knots, cyclic) {
   const uu = [];
   const ww = [];
   const vv = [];
   const theta = [];
   const firstKnot = knots[0];
+  const secondKnot = knots[1];
   const passes = cyclic ? knots.length + 1 : knots.length;
   if (firstKnot.rightType == Type.Curl) {
     const nextKnot = firstKnot.next;
@@ -87,7 +79,7 @@ var solveChoices = function(knots, psi, cyclic) {
       const lt = Math.abs(nextKnot.leftY);
       const rt = Math.abs(firstKnot.rightY);
       uu[0] = curlRatio(cc, rt, lt);
-      vv[0] = -(psi[1] * uu[0]);
+      vv[0] = -(secondKnot.psi * uu[0]);
       ww[0] = 0;
     }
   } else {
@@ -120,14 +112,13 @@ var solveChoices = function(knots, psi, cyclic) {
       }
       let ff = ee / (ee + dd);
       uu[i] = ff * bb;
-      console.log(psi[i], knot.psi);
-      let acc = -(psi[i + 1] * uu[i]);
+      let acc = -(nextKnot.psi * uu[i]);
       if (prevKnot.rightType == Type.Curl) {
         ww[i] = 0;
-        vv[i] = acc - psi[1] * (1 - ff);
+        vv[i] = acc - secondKnot.psi * (1 - ff);
       } else {
         ff = (1 - ff) / cc;
-        acc = acc - psi[i] * ff;
+        acc = acc - knot.psi * ff;
         ff = ff * aa;
         vv[i] = acc - vv[i - 1] * ff;
         ww[i] = -(ww[i - 1] * ff);
@@ -162,41 +153,41 @@ var solveChoices = function(knots, psi, cyclic) {
   }
   for (let i = 0; i < passes - 1; i++) {
     const knot = knots[i] ?? firstKnot;
+    const nextKnot = knot.next;
     const [ct, st] = sinCos(theta[i]);
-    const [cf, sf] = sinCos(-psi[i + 1] - theta[i + 1]);
-    setControls(knot, knot.next, knot.deltaX, knot.deltaY, st, ct, sf, cf);
+    const [cf, sf] = sinCos(-nextKnot.psi - theta[i + 1]);
+    setControls(knot, st, ct, sf, cf);
   }
 };
-var setControls = (knot, nextKnot, deltaX, deltaY, st, ct, sf, cf) => {
-  let lt = Math.abs(nextKnot.leftY);
-  let rt = Math.abs(knot.rightY);
-  let rr = velocity(st, ct, sf, cf, rt);
-  let ss = velocity(sf, cf, st, ct, lt);
-  if (knot.rightY < 0 || nextKnot.leftY < 0) {
-    if (st >= 0 && sf >= 0 || st <= 0 && sf <= 0) {
-      let sine = Math.abs(st) * cf + Math.abs(sf) * ct;
-      if (sine > 0) {
-        sine *= 1.00024414062;
-        if (knot.rightY < 0) {
-          if (!abGreaterCd(Math.abs(sf), 1, rr, sine)) {
-            rr = Math.abs(sf) / sine;
-          }
-        }
-        if (nextKnot.leftY < 0) {
-          if (!abGreaterCd(Math.abs(st), 1, ss, sine)) {
-            ss = Math.abs(st) / sine;
-          }
-        }
-      }
-    }
+
+// src/makeChoices.ts
+var calcDeltaValues = (knots, cyclic) => {
+  const end = cyclic ? knots.length : knots.length - 1;
+  for (let i = 0; i < end; i++) {
+    const knot = knots[i];
+    const nextKnot = knots[i + 1] ?? knots[0];
+    knot.deltaX = nextKnot.x - knot.x;
+    knot.deltaY = nextKnot.y - knot.y;
+    knot.delta = Math.hypot(knot.deltaX, knot.deltaY);
   }
-  knot.rightX = knot.x + (deltaX * ct - deltaY * st) * rr;
-  knot.rightY = knot.y + (deltaY * ct + deltaX * st) * rr;
-  nextKnot.leftX = nextKnot.x - (deltaX * cf + deltaY * sf) * ss;
-  nextKnot.leftY = nextKnot.y - (deltaY * cf - deltaX * sf) * ss;
-  knot.rightType = Type.Explicit;
-  nextKnot.leftType = Type.Explicit;
 };
+var calcPsiValues = (knots, cyclic) => {
+  const [start, end] = cyclic ? [0, knots.length] : [1, knots.length - 1];
+  for (let i = start; i < end; i++) {
+    const knot = knots[i];
+    const prevKnot = knot.prev;
+    const sin = prevKnot.deltaY / prevKnot.delta;
+    const cos = prevKnot.deltaX / prevKnot.delta;
+    knot.psi = Math.atan2(knot.deltaY * cos - knot.deltaX * sin, knot.deltaX * cos + knot.deltaY * sin);
+  }
+};
+var makeChoices = (knots, cyclic = true) => {
+  calcDeltaValues(knots, cyclic);
+  calcPsiValues(knots, cyclic);
+  solveChoices(knots, cyclic);
+};
+
+// src/hobby-curve.ts
 var createKnot = (x, y, tension) => ({
   x,
   y,
@@ -205,7 +196,8 @@ var createKnot = (x, y, tension) => ({
   leftY: tension,
   rightY: tension,
   leftX: tension,
-  rightX: tension
+  rightX: tension,
+  psi: 0
 });
 var createKnots = (points, tension = 1, cyclic = false) => {
   const knots = points.map(([x, y]) => createKnot(x, y, tension));

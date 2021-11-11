@@ -6,7 +6,7 @@
     <script src="mp_path.js"></script>
     <script src="test.js"></script>
     <script type="module" defer>
-      import { createHobbyCurve } from './hobby-curve.js'
+      import { createHobbyCurve } from './dist/hobby-curve.js'
 
       const ctx = document.getElementById('canvas-2').getContext('2d')
 
@@ -70,7 +70,7 @@
         ]
 
         console.time()
-        const cyclic = true
+        const cyclic = false
         knots = createHobbyCurve(points, 1, cyclic)
         console.timeEnd()
         curve(ctx, knots, [50, 100], cyclic)

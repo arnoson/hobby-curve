@@ -5,7 +5,7 @@
   "main": "hobby-curve.js",
   "type": "module",
   "scripts": {
-    "dev": "esbuild ./hobby-curve.ts --target=esnext --bundle --format=esm --watch --outdir=./"
+    "dev": "esbuild ./src/hobby-curve.ts --target=esnext --bundle --format=esm --watch --outdir=./dist"
   },
   "author": "",
   "license": "ISC",
