@@ -8,7 +8,6 @@ var Type;
   Type2[Type2["Open"] = 4] = "Open";
   Type2[Type2["EndCycle"] = 5] = "EndCycle";
 })(Type || (Type = {}));
-var reduceAngle = (angle) => Math.abs(angle) > Math.PI ? angle > 0 ? angle - 2 * Math.PI : angle + 2 * Math.PI : angle;
 var curlRatio = function(gamma, tensionA, tensionB) {
   const alpha = 1 / tensionA;
   const beta = 1 / tensionB;
@@ -59,13 +58,9 @@ var makeChoices = (knots, cyclic = true) => {
     psi.push(0);
   }
   psi.unshift(0);
-  solveChoices(knots[0], knots[1], n, deltaX, deltaY, delta, psi);
-  console.log("simple");
-  console.log({ delta, deltaX, deltaY, psi });
+  solveChoices(knots[0], knots[1], n, deltaX, deltaY, delta, psi, knots, cyclic);
 };
-var solveChoices = function(p, q, n, deltaX, deltaY, delta, psi) {
-  let t;
-  let ff;
+var solveChoices = function(p, q, n, deltaX, deltaY, delta, psi, knots, cyclic) {
   const matrixLength = delta.length + 1;
   const uu = new Array(matrixLength).fill(0);
   const ww = new Array(matrixLength).fill(0);
@@ -74,59 +69,46 @@ var solveChoices = function(p, q, n, deltaX, deltaY, delta, psi) {
   var k = 0;
   let s = p;
   let r = null;
-  while (true) {
-    t = s.next;
-    if (k == 0) {
-      if (s.rightType == Type.Given) {
-        if (t.leftType == Type.Given) {
-          const aa = Math.atan2(deltaY[0], deltaX[0]);
-          const [ct, st] = sinCos(p.rightX - aa);
-          const [cf, sf] = sinCos(q.leftX - aa);
-          setControls(p, q, deltaX[0], deltaY[0], st, ct, -sf, cf);
+  for (let i = 0; i <= n; i++) {
+    const t = s.next;
+    const isFirst = i === 0;
+    const isLast = i === n;
+    if (isFirst) {
+      if (s.rightType == Type.Curl) {
+        if (t.leftType == Type.Curl) {
+          p.rightType = Type.Explicit;
+          q.leftType = Type.Explicit;
+          const lt = Math.abs(q.leftY);
+          const rt = Math.abs(p.rightY);
+          let ff = UNITY / (3 * rt);
+          p.rightX = p.x + deltaX[0] * ff;
+          p.rightY = p.y + deltaY[0] * ff;
+          ff = UNITY / (3 * lt);
+          q.leftX = q.x - deltaX[0] * ff;
+          q.leftY = q.y - deltaY[0] * ff;
           return;
         } else {
-          vv[0] = s.rightX - Math.atan2(deltaY[0], deltaX[0]);
-          vv[0] = reduceAngle(vv[0]);
-          uu[0] = 0;
+          const cc = s.rightX;
+          const lt = Math.abs(t.leftY);
+          const rt = Math.abs(s.rightY);
+          uu[0] = curlRatio(cc, rt, lt);
+          vv[0] = -(psi[1] * uu[0]);
           ww[0] = 0;
         }
       } else {
-        if (s.rightType == Type.Curl) {
-          if (t.leftType == Type.Curl) {
-            p.rightType = Type.Explicit;
-            q.leftType = Type.Explicit;
-            const lt = Math.abs(q.leftY);
-            const rt = Math.abs(p.rightY);
-            let ff2 = UNITY / (3 * rt);
-            p.rightX = p.x + deltaX[0] * ff2;
-            p.rightY = p.y + deltaY[0] * ff2;
-            ff2 = UNITY / (3 * lt);
-            q.leftX = q.x - deltaX[0] * ff2;
-            q.leftY = q.y - deltaY[0] * ff2;
-            return;
-          } else {
-            const cc = s.rightX;
-            const lt = Math.abs(t.leftY);
-            const rt = Math.abs(s.rightY);
-            uu[0] = curlRatio(cc, rt, lt);
-            vv[0] = -(psi[1] * uu[0]);
-            ww[0] = 0;
-          }
-        } else {
-          if (s.rightType == Type.Open) {
-            uu[0] = 0;
-            vv[0] = 0;
-            ww[0] = 1;
-          }
+        if (s.rightType == Type.Open) {
+          uu[0] = 0;
+          vv[0] = 0;
+          ww[0] = 1;
         }
       }
     } else {
-      if (s.leftType == Type.EndCycle || s.leftType == Type.Open) {
+      if (cyclic || !isLast) {
         let aa = UNITY / (3 * Math.abs(r.rightY) - UNITY);
-        let dd = delta[k] * (3 - UNITY / Math.abs(r.rightY));
+        let dd = delta[i] * (3 - UNITY / Math.abs(r.rightY));
         let bb = UNITY / (3 * Math.abs(t.leftY) - UNITY);
-        let ee = delta[k - 1] * (3 - UNITY / Math.abs(t.leftY));
-        const cc = 1 - uu[k - 1] * aa;
+        let ee = delta[i - 1] * (3 - UNITY / Math.abs(t.leftY));
+        const cc = 1 - uu[i - 1] * aa;
         dd = dd * cc;
         const lt = Math.abs(s.leftY);
         const rt = Math.abs(s.rightY);
@@ -137,56 +119,42 @@ var solveChoices = function(p, q, n, deltaX, deltaY, delta, psi) {
             ee *= (rt / lt) ** 2;
           }
         }
-        let ff2 = ee / (ee + dd);
-        uu[k] = ff2 * bb;
-        let acc = -(psi[k + 1] * uu[k]);
+        let ff = ee / (ee + dd);
+        uu[i] = ff * bb;
+        let acc = -(psi[i + 1] * uu[i]);
         if (r.rightType == Type.Curl) {
-          ww[k] = 0;
-          vv[k] = acc - psi[1] * (1 - ff2);
+          ww[i] = 0;
+          vv[i] = acc - psi[1] * (1 - ff);
         } else {
-          ff2 = (1 - ff2) / cc;
-          acc = acc - psi[k] * ff2;
-          ff2 = ff2 * aa;
-          vv[k] = acc - vv[k - 1] * ff2;
-          ww[k] = -(ww[k - 1] * ff2);
+          ff = (1 - ff) / cc;
+          acc = acc - psi[i] * ff;
+          ff = ff * aa;
+          vv[i] = acc - vv[i - 1] * ff;
+          ww[i] = -(ww[i - 1] * ff);
         }
-        if (s.leftType == Type.EndCycle) {
+        if (cyclic && isLast) {
           let aa2 = 0;
           let bb2 = 1;
-          while (true) {
-            k -= 1;
-            if (k == 0) {
-              k = n;
-            }
-            aa2 = vv[k] - aa2 * uu[k];
-            bb2 = ww[k] - bb2 * uu[k];
-            if (k == n) {
-              break;
-            }
+          for (let j = i - 1; j >= 0; j--) {
+            const index = j === 0 ? n : j;
+            aa2 = vv[index] - aa2 * uu[index];
+            bb2 = ww[index] - bb2 * uu[index];
           }
           aa2 = aa2 / (1 - bb2);
           theta[n] = aa2;
           vv[0] = aa2;
-          for (var k = 1; k < n; k++) {
-            vv[k] = vv[k] + aa2 * ww[k];
+          for (let i2 = 1; i2 < n; i2++) {
+            vv[i2] = vv[i2] + aa2 * ww[i2];
           }
           break;
         }
       } else {
-        if (s.leftType == Type.Curl) {
-          const cc = s.leftX;
-          const lt = Math.abs(s.leftY);
-          const rt = Math.abs(r.rightY);
-          const ff2 = curlRatio(cc, lt, rt);
-          theta[n] = -(vv[n - 1] * ff2 / (1 - ff2 * uu[n - 1]));
-          break;
-        } else {
-          if (s.leftType == Type.Given) {
-            theta[n] = s.leftX - Math.atan2(deltaY[n - 1], deltaX[n - 1]);
-            theta[n] = reduceAngle(theta[n]);
-            break;
-          }
-        }
+        const cc = s.leftX;
+        const lt = Math.abs(s.leftY);
+        const rt = Math.abs(r.rightY);
+        const ff = curlRatio(cc, lt, rt);
+        theta[n] = -(vv[n - 1] * ff / (1 - ff * uu[n - 1]));
+        break;
       }
     }
     r = s;
@@ -197,17 +165,12 @@ var solveChoices = function(p, q, n, deltaX, deltaY, delta, psi) {
     theta[i] = vv[i] - theta[i + 1] * uu[i];
   }
   s = p;
-  k = 0;
-  while (true) {
-    t = s.next;
-    const [ct, st] = sinCos(theta[k]);
-    const [cf, sf] = sinCos(-psi[k + 1] - theta[k + 1]);
-    setControls(s, t, deltaX[k], deltaY[k], st, ct, sf, cf);
-    k += 1;
+  for (let i = 0; i < n; i++) {
+    const t = s.next;
+    const [ct, st] = sinCos(theta[i]);
+    const [cf, sf] = sinCos(-psi[i + 1] - theta[i + 1]);
+    setControls(s, t, deltaX[i], deltaY[i], st, ct, sf, cf);
     s = t;
-    if (k == n) {
-      break;
-    }
   }
 };
 var setControls = (p, q, deltaX, deltaY, st, ct, sf, cf) => {
@@ -270,12 +233,8 @@ var createKnots = (points, tension = 1, cyclic = false) => {
 };
 var createHobbyCurve = (points, tension = 1, cyclic = false) => {
   const knots = createKnots(points, tension, cyclic);
-  makeChoices(knots);
-  console.log("nope", knots);
-  const knots2 = createKnots(points, tension, cyclic);
-  makeChoices(knots2, cyclic);
-  console.log("simple", knots2);
-  return knots2;
+  makeChoices(knots, cyclic);
+  return knots;
 };
 export {
   createHobbyCurve

@@ -110,10 +110,7 @@ const makeChoices = (knots: Knot[], cyclic = true) => {
 
   psi.unshift(0)
 
-  solveChoices(knots[0], knots[1], n, deltaX, deltaY, delta, psi)
-
-  console.log('simple')
-  console.log({ delta, deltaX, deltaY, psi })
+  solveChoices(knots[0], knots[1], n, deltaX, deltaY, delta, psi, knots, cyclic)
 }
 
 const solveChoices = function (
@@ -123,11 +120,10 @@ const solveChoices = function (
   deltaX: number[],
   deltaY: number[],
   delta: number[],
-  psi: number[]
+  psi: number[],
+  knots: Knot[],
+  cyclic: boolean
 ) {
-  let t
-  let ff
-
   // The 'matrix' is in tridiagonal form, the solution is obtained by Gaussian
   // elimination. `uu` and `ww` are of type fraction, vv and theta are of type
   // angle.
@@ -145,60 +141,46 @@ const solveChoices = function (
   let s = p
   let r: Knot | null = null
 
-  while (true) {
-    t = s.next
-    if (k == 0) {
-      // Get the linear equations started or return with the control points in
-      // place, if linear equations needn't be solved.
-      if (s.rightType == Type.Given) {
-        if (t.leftType == Type.Given) {
-          // Reduce to simple case of two givens and return.
-          const aa = Math.atan2(deltaY[0], deltaX[0])
-          const [ct, st] = sinCos(p.rightX - aa)
-          const [cf, sf] = sinCos(q.leftX - aa)
-          setControls(p, q, deltaX[0], deltaY[0], st, ct, -sf, cf)
+  for (let i = 0; i <= n; i++) {
+    const t = s.next
+
+    const isFirst = i === 0
+    const isLast = i === n
+
+    if (isFirst) {
+      if (s.rightType == Type.Curl) {
+        if (t.leftType == Type.Curl) {
+          // Reduce to simple case of straight line and return.
+          p.rightType = Type.Explicit
+          q.leftType = Type.Explicit
+          const lt = Math.abs(q.leftY)
+          const rt = Math.abs(p.rightY)
+
+          let ff = UNITY / (3.0 * rt)
+          p.rightX = p.x + deltaX[0] * ff
+          p.rightY = p.y + deltaY[0] * ff
+
+          ff = UNITY / (3.0 * lt)
+          q.leftX = q.x - deltaX[0] * ff
+          q.leftY = q.y - deltaY[0] * ff
           return
         } else {
-          vv[0] = s.rightX - Math.atan2(deltaY[0], deltaX[0])
-          vv[0] = reduceAngle(vv[0])
-          uu[0] = 0
+          const cc = s.rightX
+          const lt = Math.abs(t.leftY)
+          const rt = Math.abs(s.rightY)
+          uu[0] = curlRatio(cc, rt, lt)
+          vv[0] = -(psi[1] * uu[0])
           ww[0] = 0
         }
       } else {
-        if (s.rightType == Type.Curl) {
-          if (t.leftType == Type.Curl) {
-            // Reduce to simple case of straight line and return.
-            p.rightType = Type.Explicit
-            q.leftType = Type.Explicit
-            const lt = Math.abs(q.leftY)
-            const rt = Math.abs(p.rightY)
-
-            let ff = UNITY / (3.0 * rt)
-            p.rightX = p.x + deltaX[0] * ff
-            p.rightY = p.y + deltaY[0] * ff
-
-            ff = UNITY / (3.0 * lt)
-            q.leftX = q.x - deltaX[0] * ff
-            q.leftY = q.y - deltaY[0] * ff
-            return
-          } else {
-            const cc = s.rightX
-            const lt = Math.abs(t.leftY)
-            const rt = Math.abs(s.rightY)
-            uu[0] = curlRatio(cc, rt, lt)
-            vv[0] = -(psi[1] * uu[0])
-            ww[0] = 0
-          }
-        } else {
-          if (s.rightType == Type.Open) {
-            uu[0] = 0
-            vv[0] = 0
-            ww[0] = 1
-          }
+        if (s.rightType == Type.Open) {
+          uu[0] = 0
+          vv[0] = 0
+          ww[0] = 1
         }
       }
     } else {
-      if (s.leftType == Type.EndCycle || s.leftType == Type.Open) {
+      if (cyclic || !isLast) {
         // Set up equation to match mock curvatures at z_k; then finish loop with
         // theta_n adjusted to equal theta_0, if a cycle has ended.
 
@@ -206,12 +188,12 @@ const solveChoices = function (
         // aa = Ak/Bk, bb = Dk/Ck, dd = (3-alpha_{k-1})d(k,k+1),
         // ee = (3-beta_{k+1})d(k-1,k), cc=(Bk-uk-Ak)/Bk
         let aa = UNITY / (3.0 * Math.abs(r!.rightY) - UNITY)
-        let dd = delta[k] * (3 - UNITY / Math.abs(r!.rightY))
+        let dd = delta[i] * (3 - UNITY / Math.abs(r!.rightY))
 
         let bb = UNITY / (3 * Math.abs(t.leftY) - UNITY)
-        let ee = delta[k - 1] * (3 - UNITY / Math.abs(t.leftY))
+        let ee = delta[i - 1] * (3 - UNITY / Math.abs(t.leftY))
 
-        const cc = 1 - uu[k - 1] * aa
+        const cc = 1 - uu[i - 1] * aa
 
         // Calculate the ratio ff = Ck/(Ck + Bk - uk-1Ak).
         dd = dd * cc
@@ -227,61 +209,49 @@ const solveChoices = function (
         }
 
         let ff = ee / (ee + dd)
-        uu[k] = ff * bb
-        let acc = -(psi[k + 1] * uu[k])
+        uu[i] = ff * bb
+        let acc = -(psi[i + 1] * uu[i])
 
         // Calculate the values of vk and wk
         if (r!.rightType == Type.Curl) {
-          ww[k] = 0
-          vv[k] = acc - psi[1] * (1 - ff)
+          ww[i] = 0
+          vv[i] = acc - psi[1] * (1 - ff)
         } else {
           ff = (1 - ff) / cc
-          acc = acc - psi[k] * ff
+          acc = acc - psi[i] * ff
           ff = ff * aa
-          vv[k] = acc - vv[k - 1] * ff
-          ww[k] = -(ww[k - 1] * ff)
+          vv[i] = acc - vv[i - 1] * ff
+          ww[i] = -(ww[i - 1] * ff)
         }
 
         // Adjust theta_n to equal theta_0 and finish loop.
-        if (s.leftType == Type.EndCycle) {
+        if (cyclic && isLast) {
           let aa = 0
           let bb = 1
-          while (true) {
-            k -= 1
-            if (k == 0) {
-              k = n
-            }
-            aa = vv[k] - aa * uu[k]
-            bb = ww[k] - bb * uu[k]
-            if (k == n) {
-              break
-            }
+
+          for (let j = i - 1; j >= 0; j--) {
+            const index = j === 0 ? n : j
+            aa = vv[index] - aa * uu[index]
+            bb = ww[index] - bb * uu[index]
           }
 
           aa = aa / (1 - bb)
           theta[n] = aa
           vv[0] = aa
-          for (var k = 1; k < n; k++) {
-            vv[k] = vv[k] + aa * ww[k]
+          for (let i = 1; i < n; i++) {
+            vv[i] = vv[i] + aa * ww[i]
           }
 
           break
         }
       } else {
-        if (s.leftType == Type.Curl) {
-          const cc = s.leftX
-          const lt = Math.abs(s.leftY)
-          const rt = Math.abs(r!.rightY)
-          const ff = curlRatio(cc, lt, rt)
-          theta[n] = -((vv[n - 1] * ff) / (1 - ff * uu[n - 1]))
-          break
-        } else {
-          if (s.leftType == Type.Given) {
-            theta[n] = s.leftX - Math.atan2(deltaY[n - 1], deltaX[n - 1])
-            theta[n] = reduceAngle(theta[n])
-            break
-          }
-        }
+        // Last knot on a non-cyclic path.
+        const cc = s.leftX
+        const lt = Math.abs(s.leftY)
+        const rt = Math.abs(r!.rightY)
+        const ff = curlRatio(cc, lt, rt)
+        theta[n] = -((vv[n - 1] * ff) / (1 - ff * uu[n - 1]))
+        break
       }
     }
     r = s
@@ -295,17 +265,12 @@ const solveChoices = function (
   }
 
   s = p
-  k = 0
-  while (true) {
-    t = s.next
-    const [ct, st] = sinCos(theta[k])
-    const [cf, sf] = sinCos(-psi[k + 1] - theta[k + 1])
-    setControls(s, t, deltaX[k], deltaY[k], st, ct, sf, cf)
-    k += 1
+  for (let i = 0; i < n; i++) {
+    const t = s.next
+    const [ct, st] = sinCos(theta[i])
+    const [cf, sf] = sinCos(-psi[i + 1] - theta[i + 1])
+    setControls(s, t, deltaX[i], deltaY[i], st, ct, sf, cf)
     s = t
-    if (k == n) {
-      break
-    }
   }
 }
 
@@ -405,12 +370,7 @@ export const createHobbyCurve = (
   cyclic = false
 ) => {
   const knots = createKnots(points, tension, cyclic)
-  makeChoices(knots)
-  console.log('nope', knots)
+  makeChoices(knots, cyclic)
 
-  const knots2 = createKnots(points, tension, cyclic)
-  makeChoices(knots2, cyclic)
-  console.log('simple', knots2)
-
-  return knots2
+  return knots
 }
