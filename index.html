@@ -70,7 +70,7 @@
         ]
 
         console.time()
-        const cyclic = false
+        const cyclic = true
         knots = createHobbyCurve(points, 1, cyclic)
         console.timeEnd()
         curve(ctx, knots, [50, 100], cyclic)

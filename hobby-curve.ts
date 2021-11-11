@@ -47,6 +47,10 @@ const calcDeltaValues = (knots: Knot[], cyclic: boolean) => {
     const knot = knots[i]
     const nextKnot = knots[i + 1] ?? knots[0]
 
+    knot.deltaX = nextKnot.x - knot.x
+    knot.deltaY = nextKnot.y - knot.y
+    knot.delta = Math.hypot(knot.deltaX, knot.deltaY)
+
     deltaX[i] = nextKnot.x - knot.x
     deltaY[i] = nextKnot.y - knot.y
     delta[i] = Math.hypot(deltaX[i], deltaY[i])
@@ -70,12 +74,14 @@ const calcPsiValues = (
     const sin = deltaY[lastIndex] / delta[lastIndex]
     const cos = deltaX[lastIndex] / delta[lastIndex]
 
-    psi.push(
-      Math.atan2(
-        deltaY[i] * cos - deltaX[i] * sin,
-        deltaX[i] * cos + deltaY[i] * sin
-      )
+    const value = Math.atan2(
+      deltaY[i] * cos - deltaX[i] * sin,
+      deltaX[i] * cos + deltaY[i] * sin
     )
+
+    knots[i].psi = value
+
+    psi.push(value)
   }
 
   return psi
@@ -86,39 +92,30 @@ const makeChoices = (knots: Knot[], cyclic = true) => {
   const psi = calcPsiValues(knots, deltaX, deltaY, delta, cyclic)
 
   if (cyclic) {
-    deltaX.push(deltaX[0])
-    deltaY.push(deltaY[0])
-    delta.push(delta[0])
-
     psi.push(psi.shift())
   }
 
   psi.push(cyclic ? psi[0] : 0)
   psi.unshift(0)
 
-  solveChoices(knots, deltaX, deltaY, delta, psi, cyclic)
+  console.log(psi)
+  console.log(knots.map(knot => knot.psi))
+
+  solveChoices(knots, psi, cyclic)
 }
 
-const solveChoices = function (
-  knots: Knot[],
-  deltaX: number[],
-  deltaY: number[],
-  delta: number[],
-  psi: number[],
-  cyclic: boolean
-) {
+const solveChoices = function (knots: Knot[], psi: number[], cyclic: boolean) {
   // The 'matrix' is in tridiagonal form, the solution is obtained by Gaussian
   // elimination. `uu` and `ww` are of type fraction, vv and theta are of type
   // angle.
-  const matrixLength = delta.length + 1
   // Relations between adjacent angles ('matrix' entries).
-  const uu = new Array(matrixLength).fill(0)
+  const uu = []
   // Additional matrix entries for the cyclic case.
-  const ww = new Array(matrixLength).fill(0)
+  const ww = []
   // Angles ('rhs' entries)
-  const vv = new Array(matrixLength).fill(0)
+  const vv = []
   // Solution of the linear system of equations.
-  const theta = new Array(matrixLength).fill(0)
+  const theta = []
 
   const firstKnot = knots[0]
   const passes = cyclic ? knots.length + 1 : knots.length
@@ -135,12 +132,12 @@ const solveChoices = function (
       const rt = Math.abs(firstKnot.rightY)
 
       let ff = UNITY / (3.0 * rt)
-      firstKnot.rightX = firstKnot.x + deltaX[0] * ff
-      firstKnot.rightY = firstKnot.y + deltaY[0] * ff
+      firstKnot.rightX = firstKnot.x + firstKnot.deltaX * ff
+      firstKnot.rightY = firstKnot.y + firstKnot.deltaY * ff
 
       ff = UNITY / (3.0 * lt)
-      nextKnot.leftX = nextKnot.x - deltaX[0] * ff
-      nextKnot.leftY = nextKnot.y - deltaY[0] * ff
+      nextKnot.leftX = nextKnot.x - firstKnot.deltaX * ff
+      nextKnot.leftY = nextKnot.y - firstKnot.deltaY * ff
 
       return
     } else {
@@ -174,10 +171,10 @@ const solveChoices = function (
       // aa = Ak/Bk, bb = Dk/Ck, dd = (3-alpha_{k-1})d(k,k+1),
       // ee = (3-beta_{k+1})d(k-1,k), cc=(Bk-uk-Ak)/Bk
       let aa = UNITY / (3.0 * Math.abs(prevKnot!.rightY) - UNITY)
-      let dd = delta[i] * (3 - UNITY / Math.abs(prevKnot!.rightY))
+      let dd = knot.delta * (3 - UNITY / Math.abs(prevKnot!.rightY))
 
       let bb = UNITY / (3 * Math.abs(nextKnot.leftY) - UNITY)
-      let ee = delta[i - 1] * (3 - UNITY / Math.abs(nextKnot.leftY))
+      let ee = prevKnot.delta * (3 - UNITY / Math.abs(nextKnot.leftY))
 
       const cc = 1 - uu[i - 1] * aa
 
@@ -194,6 +191,8 @@ const solveChoices = function (
       }
       let ff = ee / (ee + dd)
       uu[i] = ff * bb
+
+      console.log(psi[i], knot.psi)
 
       // Calculate the values of vk and wk
       let acc = -(psi[i + 1] * uu[i])
@@ -248,7 +247,7 @@ const solveChoices = function (
     const knot = knots[i] ?? firstKnot
     const [ct, st] = sinCos(theta[i])
     const [cf, sf] = sinCos(-psi[i + 1] - theta[i + 1])
-    setControls(knot, knot.next, deltaX[i], deltaY[i], st, ct, sf, cf)
+    setControls(knot, knot.next, knot.deltaX, knot.deltaY, st, ct, sf, cf)
   }
 }
 

@@ -23,6 +23,11 @@ export interface Knot {
   next: Knot
   prev: Knot
   index?: number
+
+  deltaX?: number
+  deltaY?: number
+  delta?: number
+  psi?: number
 }
 
 export const curlRatio = function (
