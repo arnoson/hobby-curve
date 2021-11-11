@@ -1,4 +1,4 @@
-import { Knot, Type, curlRatio } from './utils'
+import { Knot, curlRatio } from './utils'
 
 const UNITY = 1
 
@@ -21,35 +21,12 @@ export const calcThetaValues = function (knots: Knot[], cyclic: boolean) {
   // Solve first knot.
   if (!cyclic) {
     const nextKnot = firstKnot.next
-
-    console.log(nextKnot.leftType)
-
-    if (nextKnot.leftType == Type.Curl) {
-      console.log('je')
-
-      // Reduce to simple case of straight line and return.
-      firstKnot.rightType = Type.Explicit
-      nextKnot.leftType = Type.Explicit
-      const lt = Math.abs(nextKnot.leftY)
-      const rt = Math.abs(firstKnot.rightY)
-
-      let ff = UNITY / (3.0 * rt)
-      firstKnot.rightX = firstKnot.x + firstKnot.deltaX * ff
-      firstKnot.rightY = firstKnot.y + firstKnot.deltaY * ff
-
-      ff = UNITY / (3.0 * lt)
-      nextKnot.leftX = nextKnot.x - firstKnot.deltaX * ff
-      nextKnot.leftY = nextKnot.y - firstKnot.deltaY * ff
-
-      return
-    } else {
-      const cc = firstKnot.rightX
-      const lt = Math.abs(nextKnot.leftY)
-      const rt = Math.abs(firstKnot.rightY)
-      uu[0] = curlRatio(cc, rt, lt)
-      vv[0] = -(secondKnot.psi * uu[0])
-      ww[0] = 0
-    }
+    const cc = firstKnot.rightX
+    const lt = Math.abs(nextKnot.leftY)
+    const rt = Math.abs(firstKnot.rightY)
+    uu[0] = curlRatio(cc, rt, lt)
+    vv[0] = -(secondKnot.psi * uu[0])
+    ww[0] = 0
   } else {
     uu[0] = 0
     vv[0] = 0
@@ -94,16 +71,11 @@ export const calcThetaValues = function (knots: Knot[], cyclic: boolean) {
 
       // Calculate the values of vk and wk
       let acc = -(nextKnot.psi * uu[i])
-      if (prevKnot!.rightType == Type.Curl) {
-        ww[i] = 0
-        vv[i] = acc - secondKnot.psi * (1 - ff)
-      } else {
-        ff = (1 - ff) / cc
-        acc = acc - knot.psi * ff
-        ff = ff * aa
-        vv[i] = acc - vv[i - 1] * ff
-        ww[i] = -(ww[i - 1] * ff)
-      }
+      ff = (1 - ff) / cc
+      acc = acc - knot.psi * ff
+      ff = ff * aa
+      vv[i] = acc - vv[i - 1] * ff
+      ww[i] = -(ww[i - 1] * ff)
 
       // Adjust theta_n to equal theta_0 and finish loop.
       if (cyclic && isLast) {

@@ -29,17 +29,16 @@ svn://tug.org/texlive/trunk/Build/source/texk/web2c/mplibdir revision 22737 #
 (2011-05-31)
 */
 
-import { Type, Point, sinCos } from './utils'
+import { Point } from './utils'
 import { calcDeltaValues } from './calcDeltaValues'
 import { calcPsiValues } from './calcPsiValues'
+import { calcPhiValues } from './calcPhiValues'
 import { calcThetaValues } from './calcThetaValues'
 import { setControls } from './setControls'
 
 const createKnot = (x: number, y: number, tension: number) => ({
   x: x,
   y: y,
-  leftType: Type.Open,
-  rightType: Type.Open,
   leftY: tension,
   rightY: tension,
   leftX: tension,
@@ -47,31 +46,31 @@ const createKnot = (x: number, y: number, tension: number) => ({
   psi: 0,
 })
 
-const createKnots = (
+export const createHobbyKnots = (
   points: Point[],
   tension: any = 1,
-  cyclic: any = false
+  cyclic = false
 ) => {
   // @ts-ignore (`next` und `prev` will be set immediately)
   const knots: Knot[] = points.map(({ x, y }) => createKnot(x, y, tension))
+
   const firstKnot = knots[0]
   const lastKnot = knots[knots.length - 1]
-
   for (let i = 0; i < knots.length; i++) {
     knots[i].next = knots[i + 1] ?? firstKnot
     knots[i].prev = knots[i - 1] ?? lastKnot
     knots[i].index = i
   }
 
-  if (cyclic) {
-    firstKnot.leftType = Type.EndCycle
-    firstKnot.rightType = Type.Open
-  } else {
-    firstKnot.leftType = Type.EndCycle
-    firstKnot.rightType = Type.Curl
+  calcDeltaValues(knots, cyclic)
+  calcPsiValues(knots, cyclic)
+  calcThetaValues(knots, cyclic)
+  calcPhiValues(knots, cyclic)
 
-    lastKnot.leftType = Type.Curl
-    lastKnot.rightType = Type.Endpoint
+  const end = cyclic ? knots.length : knots.length - 1
+  for (let i = 0; i < end; i++) {
+    const knot = knots[i]
+    setControls(knot, knot.next)
   }
 
   return knots
@@ -82,20 +81,24 @@ export const createHobbyCurve = (
   tension = 1,
   cyclic = false
 ) => {
-  const knots = createKnots(points, tension, cyclic)
-  calcDeltaValues(knots, cyclic)
-  calcPsiValues(knots, cyclic)
-  calcThetaValues(knots, cyclic)
+  const knots = createHobbyKnots(points, tension, cyclic)
+  return createHobbyKnots(points, tension, cyclic)
+}
 
-  const passes = cyclic ? knots.length + 1 : knots.length
+export const createHobbyData = (
+  points: Point[],
+  tension = 1,
+  cyclic = false
+) => {
+  const knots = createHobbyKnots(points, tension, cyclic)
 
-  for (let i = 0; i < passes - 1; i++) {
-    const knot = knots[i] ?? knots[0]
+  let bezierCommands = ''
+  const end = cyclic ? knots.length : knots.length - 1
+  for (let i = 0; i < end; i++) {
+    const knot = knots[i]
     const nextKnot = knot.next
-    const [ct, st] = sinCos(knot.theta)
-    const [cf, sf] = sinCos(-nextKnot.psi - nextKnot.theta)
-    setControls(knot, st, ct, sf, cf)
+    bezierCommands += `${knot.rightX},${knot.rightY} ${nextKnot.leftX},${nextKnot.leftY} ${nextKnot.x},${nextKnot.y} `
   }
 
-  return knots
+  return `M ${knots[0].x},${knots[0].y} C ${bezierCommands}`
 }

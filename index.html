@@ -6,7 +6,7 @@
     <script src="mp_path.js"></script>
     <script src="test.js"></script>
     <script type="module" defer>
-      import { createHobbyCurve } from './dist/index.js'
+      import { createHobbyCurve, createHobbyData } from './dist/index.js'
 
       const ctx = document.getElementById('canvas-2').getContext('2d')
 
@@ -23,6 +23,13 @@
         ctx.beginPath()
 
         for (var i = 0; i < knots.length - 1; i++) {
+          console.log(
+            knots[i].rightX,
+            knots[i].rightY,
+            knots[i + 1].leftX,
+            knots[i + 1].leftY
+          )
+
           ctx.moveTo(off[0] + knots[i].x, off[1] + knots[i].y)
           ctx.bezierCurveTo(
             off[0] + knots[i].rightX,
@@ -70,11 +77,14 @@
         ]
 
         console.time()
-        const cyclic = false
+        const cyclic = true
 
         knots = createHobbyCurve(points, 1, cyclic)
 
         console.timeEnd()
+
+        console.log(createHobbyData(points, 1, cyclic))
+
         curve(ctx, knots, [50, 100], cyclic)
 
         console.log(knots)
@@ -84,6 +94,7 @@
       }
 
       test(ctx)
+      document.addEventListener('click', () => test(ctx))
     </script>
     <style>
       body,

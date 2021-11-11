@@ -1,45 +1,27 @@
-import { Type, Knot, velocity, abGreaterCd } from './utils'
+import { Knot, velocity } from './utils'
 
-export const setControls = (
-  knot: Knot,
-  st: number,
-  ct: number,
-  sf: number,
-  cf: number
-) => {
-  const nextKnot = knot.next
+export const setControls = (knotA: Knot, knotB: Knot) => {
+  const thetaSin = Math.sin(knotA.theta)
+  const thetaCos = Math.cos(knotA.theta)
+  const phiSin = Math.sin(knotB.phi)
+  const phiCos = Math.cos(knotB.phi)
 
-  let lt = Math.abs(nextKnot.leftY)
-  let rt = Math.abs(knot.rightY)
-  let rr = velocity(st, ct, sf, cf, rt)
-  let ss = velocity(sf, cf, st, ct, lt)
+  const left = knotB.leftY
+  const right = knotA.rightY
 
-  if (knot.rightY < 0 || nextKnot.leftY < 0) {
-    // Decrease the velocities, if necessary, to stay inside the bounding
-    // triangle.
-    if ((st >= 0 && sf >= 0) || (st <= 0 && sf <= 0)) {
-      let sine = Math.abs(st) * cf + Math.abs(sf) * ct
-      if (sine > 0) {
-        sine *= 1.00024414062 // safety factor
-        if (knot.rightY < 0) {
-          if (!abGreaterCd(Math.abs(sf), 1, rr, sine)) {
-            rr = Math.abs(sf) / sine
-          }
-        }
-        if (nextKnot.leftY < 0) {
-          if (!abGreaterCd(Math.abs(st), 1, ss, sine)) {
-            ss = Math.abs(st) / sine
-          }
-        }
-      }
-    }
-  }
+  const velocityRight = velocity(thetaSin, thetaCos, phiSin, phiCos, left)
+  const velocityLeft = velocity(phiSin, phiCos, thetaSin, thetaCos, right)
 
-  knot.rightX = knot.x + (knot.deltaX * ct - knot.deltaY * st) * rr
-  knot.rightY = knot.y + (knot.deltaY * ct + knot.deltaX * st) * rr
-  knot.rightType = Type.Explicit
+  knotA.rightX =
+    knotA.x +
+    (knotA.deltaX * thetaCos - knotA.deltaY * thetaSin) * velocityRight
 
-  nextKnot.leftX = nextKnot.x - (knot.deltaX * cf + knot.deltaY * sf) * ss
-  nextKnot.leftY = nextKnot.y - (knot.deltaY * cf - knot.deltaX * sf) * ss
-  nextKnot.leftType = Type.Explicit
+  knotA.rightY =
+    knotA.y +
+    (knotA.deltaY * thetaCos + knotA.deltaX * thetaSin) * velocityRight
+
+  knotB.leftX =
+    knotB.x - (knotA.deltaX * phiCos + knotA.deltaY * phiSin) * velocityLeft
+  knotB.leftY =
+    knotB.y - (knotA.deltaY * phiCos - knotA.deltaX * phiSin) * velocityLeft
 }

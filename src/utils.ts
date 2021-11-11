@@ -1,12 +1,3 @@
-export enum Type {
-  Endpoint,
-  Explicit,
-  Given,
-  Curl,
-  Open,
-  EndCycle,
-}
-
 export interface Point {
   x: number
   y: number
@@ -15,9 +6,6 @@ export interface Point {
 export interface Knot {
   x: number
   y: number
-
-  leftType: Type
-  rightType: Type
 
   leftY: number
   rightY: number
@@ -33,6 +21,7 @@ export interface Knot {
   deltaY?: number
   delta?: number
   psi?: number
+  phi?: number
   theta?: number
 }
 
@@ -50,26 +39,24 @@ export const curlRatio = function (
   )
 }
 
-export const abGreaterCd = (a: number, b: number, c: number, d: number) =>
-  a * b > c * d
-
-export const abVsCd = (a: number, b: number, c: number, d: number) =>
-  a * b == c * d ? 0 : a * b > c * d ? 1 : -1
-
-export const sinCos = (x: number) => [Math.cos(x), Math.sin(x)]
-
 /**
  * Metapost's standard velocity subroutine for cubic Bezier curves.
  */
 export const velocity = (
-  st: number,
-  ct: number,
-  sf: number,
-  cf: number,
+  thetaSin: number,
+  thetaCos: number,
+  phiSin: number,
+  phiCos: number,
   t: number
 ) =>
   Math.min(
     4.0,
-    (2.0 + Math.sqrt(2) * (st - sf / 16.0) * (sf - st / 16.0) * (ct - cf)) /
-      (1.5 * t * (2 + (Math.sqrt(5) - 1) * ct + (3 - Math.sqrt(5)) * cf))
+    (2.0 +
+      Math.sqrt(2) *
+        (thetaSin - phiSin / 16.0) *
+        (phiSin - thetaSin / 16.0) *
+        (thetaCos - phiCos)) /
+      (1.5 *
+        t *
+        (2 + (Math.sqrt(5) - 1) * thetaCos + (3 - Math.sqrt(5)) * phiCos))
   )
