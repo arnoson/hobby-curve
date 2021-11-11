@@ -21,6 +21,8 @@ export interface Knot {
   rightX: number
 
   next: Knot
+  prev: Knot
+  index?: number
 }
 
 export const curlRatio = function (
@@ -36,6 +38,9 @@ export const curlRatio = function (
       (alpha ** 3 * gamma + (3.0 - beta) * beta ** 2)
   )
 }
+
+export const abGreaterCd = (a: number, b: number, c: number, d: number) =>
+  a * b > c * d
 
 export const abVsCd = (a: number, b: number, c: number, d: number) =>
   a * b == c * d ? 0 : a * b > c * d ? 1 : -1

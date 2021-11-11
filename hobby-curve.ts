@@ -33,7 +33,7 @@ svn://tug.org/texlive/trunk/Build/source/texk/web2c/mplibdir revision 22737 #
 (2011-05-31)
 */
 
-import { abVsCd, curlRatio, Knot, sinCos, Type, velocity } from './utils'
+import { abGreaterCd, curlRatio, Knot, sinCos, Type, velocity } from './utils'
 
 const UNITY = 1
 
@@ -120,130 +120,123 @@ const solveChoices = function (
   // Solution of the linear system of equations.
   const theta = new Array(matrixLength).fill(0)
 
-  const p = knots[0]
-  let q = knots[1]
-
+  const firstKnot = knots[0]
   const passes = cyclic ? knots.length + 1 : knots.length
-  const lastIndex = passes - 1
 
-  let s = p
-  let r: Knot | null = null
+  // Solve first knot.
+  if (firstKnot.rightType == Type.Curl) {
+    const nextKnot = firstKnot.next
 
-  for (let i = 0; i < passes; i++) {
-    const t = s.next
+    if (nextKnot.leftType == Type.Curl) {
+      // Reduce to simple case of straight line and return.
+      firstKnot.rightType = Type.Explicit
+      nextKnot.leftType = Type.Explicit
+      const lt = Math.abs(nextKnot.leftY)
+      const rt = Math.abs(firstKnot.rightY)
 
-    const isFirst = i === 0
+      let ff = UNITY / (3.0 * rt)
+      firstKnot.rightX = firstKnot.x + deltaX[0] * ff
+      firstKnot.rightY = firstKnot.y + deltaY[0] * ff
+
+      ff = UNITY / (3.0 * lt)
+      nextKnot.leftX = nextKnot.x - deltaX[0] * ff
+      nextKnot.leftY = nextKnot.y - deltaY[0] * ff
+
+      return
+    } else {
+      const cc = firstKnot.rightX
+      const lt = Math.abs(nextKnot.leftY)
+      const rt = Math.abs(firstKnot.rightY)
+      uu[0] = curlRatio(cc, rt, lt)
+      vv[0] = -(psi[1] * uu[0])
+      ww[0] = 0
+    }
+  } else {
+    if (firstKnot.rightType == Type.Open) {
+      uu[0] = 0
+      vv[0] = 0
+      ww[0] = 1
+    }
+  }
+
+  // Solve remaining knots (and cycle back to first if path is cyclic).
+  for (let i = 1; i < passes; i++) {
+    const knot = knots[i] ?? firstKnot
+    const nextKnot = knot.next
+    const prevKnot = knot.prev
     const isLast = i === passes - 1
 
-    if (isFirst) {
-      if (s.rightType == Type.Curl) {
-        if (t.leftType == Type.Curl) {
-          // Reduce to simple case of straight line and return.
-          p.rightType = Type.Explicit
-          q.leftType = Type.Explicit
-          const lt = Math.abs(q.leftY)
-          const rt = Math.abs(p.rightY)
+    if (cyclic || !isLast) {
+      // Set up equation to match mock curvatures at z_k; then finish loop with
+      // theta_n adjusted to equal theta_0, if a cycle has ended.
 
-          let ff = UNITY / (3.0 * rt)
-          p.rightX = p.x + deltaX[0] * ff
-          p.rightY = p.y + deltaY[0] * ff
+      // Calculate the values:
+      // aa = Ak/Bk, bb = Dk/Ck, dd = (3-alpha_{k-1})d(k,k+1),
+      // ee = (3-beta_{k+1})d(k-1,k), cc=(Bk-uk-Ak)/Bk
+      let aa = UNITY / (3.0 * Math.abs(prevKnot!.rightY) - UNITY)
+      let dd = delta[i] * (3 - UNITY / Math.abs(prevKnot!.rightY))
 
-          ff = UNITY / (3.0 * lt)
-          q.leftX = q.x - deltaX[0] * ff
-          q.leftY = q.y - deltaY[0] * ff
-          return
-        } else {
-          const cc = s.rightX
-          const lt = Math.abs(t.leftY)
-          const rt = Math.abs(s.rightY)
-          uu[0] = curlRatio(cc, rt, lt)
-          vv[0] = -(psi[1] * uu[0])
-          ww[0] = 0
-        }
+      let bb = UNITY / (3 * Math.abs(nextKnot.leftY) - UNITY)
+      let ee = delta[i - 1] * (3 - UNITY / Math.abs(nextKnot.leftY))
+
+      const cc = 1 - uu[i - 1] * aa
+
+      // Calculate the ratio ff = Ck/(Ck + Bk - uk-1Ak).
+      dd = dd * cc
+      const lt = Math.abs(knot.leftY)
+      const rt = Math.abs(knot.rightY)
+      if (lt < rt) {
+        dd *= (lt / rt) ** 2
       } else {
-        if (s.rightType == Type.Open) {
-          uu[0] = 0
-          vv[0] = 0
-          ww[0] = 1
+        if (lt > rt) {
+          ee *= (rt / lt) ** 2
         }
       }
-    } else {
-      if (cyclic || !isLast) {
-        // Set up equation to match mock curvatures at z_k; then finish loop with
-        // theta_n adjusted to equal theta_0, if a cycle has ended.
+      let ff = ee / (ee + dd)
+      uu[i] = ff * bb
 
-        // Calculate the values:
-        // aa = Ak/Bk, bb = Dk/Ck, dd = (3-alpha_{k-1})d(k,k+1),
-        // ee = (3-beta_{k+1})d(k-1,k), cc=(Bk-uk-Ak)/Bk
-        let aa = UNITY / (3.0 * Math.abs(r!.rightY) - UNITY)
-        let dd = delta[i] * (3 - UNITY / Math.abs(r!.rightY))
-
-        let bb = UNITY / (3 * Math.abs(t.leftY) - UNITY)
-        let ee = delta[i - 1] * (3 - UNITY / Math.abs(t.leftY))
-
-        const cc = 1 - uu[i - 1] * aa
-
-        // Calculate the ratio ff = Ck/(Ck + Bk - uk-1Ak).
-        dd = dd * cc
-        const lt = Math.abs(s.leftY)
-        const rt = Math.abs(s.rightY)
-
-        if (lt < rt) {
-          dd *= (lt / rt) ** 2
-        } else {
-          if (lt > rt) {
-            ee *= (rt / lt) ** 2
-          }
-        }
-
-        let ff = ee / (ee + dd)
-        uu[i] = ff * bb
-        let acc = -(psi[i + 1] * uu[i])
-
-        // Calculate the values of vk and wk
-        if (r!.rightType == Type.Curl) {
-          ww[i] = 0
-          vv[i] = acc - psi[1] * (1 - ff)
-        } else {
-          ff = (1 - ff) / cc
-          acc = acc - psi[i] * ff
-          ff = ff * aa
-          vv[i] = acc - vv[i - 1] * ff
-          ww[i] = -(ww[i - 1] * ff)
-        }
-
-        // Adjust theta_n to equal theta_0 and finish loop.
-        if (cyclic && isLast) {
-          let aa = 0
-          let bb = 1
-
-          for (let j = i - 1; j >= 0; j--) {
-            const index = j === 0 ? passes - 1 : j
-            aa = vv[index] - aa * uu[index]
-            bb = ww[index] - bb * uu[index]
-          }
-
-          aa = aa / (1 - bb)
-          theta[passes - 1] = aa
-          vv[0] = aa
-          for (let i = 1; i < passes - 1; i++) {
-            vv[i] = vv[i] + aa * ww[i]
-          }
-
-          break
-        }
+      // Calculate the values of vk and wk
+      let acc = -(psi[i + 1] * uu[i])
+      if (prevKnot!.rightType == Type.Curl) {
+        ww[i] = 0
+        vv[i] = acc - psi[1] * (1 - ff)
       } else {
-        // Last knot on a non-cyclic path.
-        const cc = s.leftX
-        const lt = Math.abs(s.leftY)
-        const rt = Math.abs(r!.rightY)
-        const ff = curlRatio(cc, lt, rt)
-        theta[passes - 1] = -((vv[passes - 2] * ff) / (1 - ff * uu[passes - 2]))
+        ff = (1 - ff) / cc
+        acc = acc - psi[i] * ff
+        ff = ff * aa
+        vv[i] = acc - vv[i - 1] * ff
+        ww[i] = -(ww[i - 1] * ff)
+      }
+
+      // Adjust theta_n to equal theta_0 and finish loop.
+      if (cyclic && isLast) {
+        let aa = 0
+        let bb = 1
+
+        for (let j = i - 1; j >= 0; j--) {
+          const index = j === 0 ? passes - 1 : j
+          aa = vv[index] - aa * uu[index]
+          bb = ww[index] - bb * uu[index]
+        }
+
+        aa = aa / (1 - bb)
+        theta[passes - 1] = aa
+        vv[0] = aa
+        for (let i = 1; i < passes - 1; i++) {
+          vv[i] = vv[i] + aa * ww[i]
+        }
+
         break
       }
+    } else {
+      // Last knot on a non-cyclic path.
+      const cc = knot.leftX
+      const lt = Math.abs(knot.leftY)
+      const rt = Math.abs(prevKnot!.rightY)
+      const ff = curlRatio(cc, lt, rt)
+      theta[passes - 1] = -((vv[passes - 2] * ff) / (1 - ff * uu[passes - 2]))
+      break
     }
-    r = s
-    s = t
   }
 
   // Finish choosing angles and assigning control points.
@@ -251,13 +244,11 @@ const solveChoices = function (
     theta[i] = vv[i] - theta[i + 1] * uu[i]
   }
 
-  s = p
   for (let i = 0; i < passes - 1; i++) {
-    const t = s.next
+    const knot = knots[i] ?? firstKnot
     const [ct, st] = sinCos(theta[i])
     const [cf, sf] = sinCos(-psi[i + 1] - theta[i + 1])
-    setControls(s, t, deltaX[i], deltaY[i], st, ct, sf, cf)
-    s = t
+    setControls(knot, knot.next, deltaX[i], deltaY[i], st, ct, sf, cf)
   }
 }
 
@@ -267,8 +258,8 @@ const solveChoices = function (
  * and cos(phi) needed in this  calculation.
  */
 const setControls = (
-  p: Knot,
-  q: Knot,
+  knot: Knot,
+  nextKnot: Knot,
   deltaX: number,
   deltaY: number,
   st: number,
@@ -276,25 +267,25 @@ const setControls = (
   sf: number,
   cf: number
 ) => {
-  let lt = Math.abs(q.leftY)
-  let rt = Math.abs(p.rightY)
+  let lt = Math.abs(nextKnot.leftY)
+  let rt = Math.abs(knot.rightY)
   let rr = velocity(st, ct, sf, cf, rt)
   let ss = velocity(sf, cf, st, ct, lt)
 
-  if (p.rightY < 0 || q.leftY < 0) {
+  if (knot.rightY < 0 || nextKnot.leftY < 0) {
     // Decrease the velocities, if necessary, to stay inside the bounding
     // triangle.
     if ((st >= 0 && sf >= 0) || (st <= 0 && sf <= 0)) {
       let sine = Math.abs(st) * cf + Math.abs(sf) * ct
       if (sine > 0) {
         sine *= 1.00024414062 // safety factor
-        if (p.rightY < 0) {
-          if (abVsCd(Math.abs(sf), 1, rr, sine) < 0) {
+        if (knot.rightY < 0) {
+          if (!abGreaterCd(Math.abs(sf), 1, rr, sine)) {
             rr = Math.abs(sf) / sine
           }
         }
-        if (q.leftY < 0) {
-          if (abVsCd(Math.abs(st), 1, ss, sine) < 0) {
+        if (nextKnot.leftY < 0) {
+          if (!abGreaterCd(Math.abs(st), 1, ss, sine)) {
             ss = Math.abs(st) / sine
           }
         }
@@ -302,17 +293,17 @@ const setControls = (
     }
   }
 
-  p.rightX = p.x + (deltaX * ct - deltaY * st) * rr
-  p.rightY = p.y + (deltaY * ct + deltaX * st) * rr
+  knot.rightX = knot.x + (deltaX * ct - deltaY * st) * rr
+  knot.rightY = knot.y + (deltaY * ct + deltaX * st) * rr
 
-  q.leftX = q.x - (deltaX * cf + deltaY * sf) * ss
-  q.leftY = q.y - (deltaY * cf - deltaX * sf) * ss
+  nextKnot.leftX = nextKnot.x - (deltaX * cf + deltaY * sf) * ss
+  nextKnot.leftY = nextKnot.y - (deltaY * cf - deltaX * sf) * ss
 
-  p.rightType = Type.Explicit
-  q.leftType = Type.Explicit
+  knot.rightType = Type.Explicit
+  nextKnot.leftType = Type.Explicit
 }
 
-const createKnot = (x, y, tension) => ({
+const createKnot = (x: number, y: number, tension: number) => ({
   x: x,
   y: y,
   leftType: Type.Open,
@@ -335,6 +326,8 @@ const createKnots = (
 
   for (let i = 0; i < knots.length; i++) {
     knots[i].next = knots[i + 1] ?? firstKnot
+    knots[i].prev = knots[i - 1] ?? lastKnot
+    knots[i].index = i
   }
 
   if (cyclic) {
