@@ -23,20 +23,6 @@ export interface Knot {
   next: Knot
 }
 
-export const knotsAreEqual = (knot: Knot, nextKnot: Knot) =>
-  knot.rightType > Type.Explicit &&
-  (knot.x - nextKnot.x) ** 2 + (knot.y - nextKnot.y) ** 2 < Number.EPSILON ** 2
-
-export const knotIsBreakpoint = (knot: Knot) =>
-  knot.leftType != Type.Open || knot.rightType != Type.Open
-
-export const reduceAngle = (angle: number) =>
-  Math.abs(angle) > Math.PI
-    ? angle > 0
-      ? angle - 2 * Math.PI
-      : angle + 2 * Math.PI
-    : angle
-
 export const curlRatio = function (
   gamma: number,
   tensionA: number,

@@ -33,17 +33,7 @@ svn://tug.org/texlive/trunk/Build/source/texk/web2c/mplibdir revision 22737 #
 (2011-05-31)
 */
 
-import {
-  abVsCd,
-  curlRatio,
-  Knot,
-  knotIsBreakpoint,
-  knotsAreEqual,
-  reduceAngle,
-  sinCos,
-  Type,
-  velocity,
-} from './utils'
+import { abVsCd, curlRatio, Knot, sinCos, Type, velocity } from './utils'
 
 const UNITY = 1
 
@@ -95,33 +85,26 @@ const makeChoices = (knots: Knot[], cyclic = true) => {
   const [deltaX, deltaY, delta] = calcDeltaValues(knots, cyclic)
   const psi = calcPsiValues(knots, deltaX, deltaY, delta, cyclic)
 
-  const n = cyclic ? knots.length : knots.length - 1
-
   if (cyclic) {
     deltaX.push(deltaX[0])
     deltaY.push(deltaY[0])
     delta.push(delta[0])
 
     psi.push(psi.shift())
-    psi.push(psi[0])
-  } else {
-    psi.push(0)
   }
 
+  psi.push(cyclic ? psi[0] : 0)
   psi.unshift(0)
 
-  solveChoices(knots[0], knots[1], n, deltaX, deltaY, delta, psi, knots, cyclic)
+  solveChoices(knots, deltaX, deltaY, delta, psi, cyclic)
 }
 
 const solveChoices = function (
-  p: Knot,
-  q: Knot,
-  n: number,
+  knots: Knot[],
   deltaX: number[],
   deltaY: number[],
   delta: number[],
   psi: number[],
-  knots: Knot[],
   cyclic: boolean
 ) {
   // The 'matrix' is in tridiagonal form, the solution is obtained by Gaussian
@@ -137,15 +120,20 @@ const solveChoices = function (
   // Solution of the linear system of equations.
   const theta = new Array(matrixLength).fill(0)
 
-  var k = 0 // current knot index
+  const p = knots[0]
+  let q = knots[1]
+
+  const passes = cyclic ? knots.length + 1 : knots.length
+  const lastIndex = passes - 1
+
   let s = p
   let r: Knot | null = null
 
-  for (let i = 0; i <= n; i++) {
+  for (let i = 0; i < passes; i++) {
     const t = s.next
 
     const isFirst = i === 0
-    const isLast = i === n
+    const isLast = i === passes - 1
 
     if (isFirst) {
       if (s.rightType == Type.Curl) {
@@ -230,15 +218,15 @@ const solveChoices = function (
           let bb = 1
 
           for (let j = i - 1; j >= 0; j--) {
-            const index = j === 0 ? n : j
+            const index = j === 0 ? passes - 1 : j
             aa = vv[index] - aa * uu[index]
             bb = ww[index] - bb * uu[index]
           }
 
           aa = aa / (1 - bb)
-          theta[n] = aa
+          theta[passes - 1] = aa
           vv[0] = aa
-          for (let i = 1; i < n; i++) {
+          for (let i = 1; i < passes - 1; i++) {
             vv[i] = vv[i] + aa * ww[i]
           }
 
@@ -250,22 +238,21 @@ const solveChoices = function (
         const lt = Math.abs(s.leftY)
         const rt = Math.abs(r!.rightY)
         const ff = curlRatio(cc, lt, rt)
-        theta[n] = -((vv[n - 1] * ff) / (1 - ff * uu[n - 1]))
+        theta[passes - 1] = -((vv[passes - 2] * ff) / (1 - ff * uu[passes - 2]))
         break
       }
     }
     r = s
     s = t
-    k += 1
   }
 
   // Finish choosing angles and assigning control points.
-  for (let i = n - 1; i > -1; i -= 1) {
+  for (let i = passes - 2; i > -1; i -= 1) {
     theta[i] = vv[i] - theta[i + 1] * uu[i]
   }
 
   s = p
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < passes - 1; i++) {
     const t = s.next
     const [ct, st] = sinCos(theta[i])
     const [cf, sf] = sinCos(-psi[i + 1] - theta[i + 1])
