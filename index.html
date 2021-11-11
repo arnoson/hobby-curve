@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Hobby curves</title>
+    <script src="mp_path.js"></script>
+    <script src="test.js"></script>
+    <script type="module" defer>
+      import { createHobbyCurve } from './hobby-curve.js'
+
+      const ctx = document.getElementById('canvas-2').getContext('2d')
+
+      function circle(ctx, x, y, r) {
+        ctx.beginPath()
+        ctx.arc(x, y, r, 0, 2 * Math.PI)
+        ctx.stroke()
+      }
+
+      function curve(ctx, knots, offset, cycle) {
+        var off = offset || [0, 0]
+
+        ctx.strokeStyle = 'red'
+        ctx.beginPath()
+
+        for (var i = 0; i < knots.length - 1; i++) {
+          ctx.moveTo(off[0] + knots[i].x, off[1] + knots[i].y)
+          ctx.bezierCurveTo(
+            off[0] + knots[i].rightX,
+            off[1] + knots[i].rightY,
+            off[0] + knots[i + 1].leftX,
+            off[1] + knots[i + 1].leftY,
+            off[0] + knots[i + 1].x,
+            off[1] + knots[i + 1].y
+          )
+          ctx.stroke()
+
+          circle(ctx, off[0] + knots[i].x, off[1] + knots[i].y, 3)
+          circle(ctx, off[0] + knots[i].rightX, off[1] + knots[i].rightY, 1)
+          circle(
+            ctx,
+            off[0] + knots[i + 1].leftX,
+            off[1] + knots[i + 1].leftY,
+            1
+          )
+          circle(ctx, off[0] + knots[i + 1].x, off[1] + knots[i + 1].y, 3)
+        }
+        if (cycle) {
+          i = knots.length - 1
+          ctx.moveTo(off[0] + knots[i].x, off[1] + knots[i].y)
+          ctx.bezierCurveTo(
+            off[0] + knots[i].rightX,
+            off[1] + knots[i].rightY,
+            off[0] + knots[0].leftX,
+            off[1] + knots[0].leftY,
+            off[0] + knots[0].x,
+            off[1] + knots[0].y
+          )
+          ctx.stroke()
+        }
+      }
+
+      function test(ctx) {
+        ctx.clearRect(0, 0, 600, 770)
+        const points = [
+          [0, 0],
+          [200, 133],
+          [130, 300],
+          [33, 233],
+          [100, 167],
+        ]
+
+        console.time()
+        knots = createHobbyCurve(points, 1, true)
+        console.timeEnd()
+        curve(ctx, knots, [50, 100], true)
+
+        // knots = createHobbyCurve(points, 1, false)
+        // curve(ctx, knots, [300, 100], false)
+      }
+
+      test(ctx)
+    </script>
+    <style>
+      body,
+      html {
+        margin: 0;
+      }
+
+      #canvas-2 {
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+    </style>
+  </head>
+  <body onload="init()">
+    <canvas id="canvas" width="600" height="760"></canvas>
+    <canvas id="canvas-2" width="600" height="760"></canvas>
+  </body>
+</html>

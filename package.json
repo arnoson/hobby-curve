@@ -1,0 +1,15 @@
+{
+  "name": "hobby-curve",
+  "version": "1.0.0",
+  "description": "",
+  "main": "hobby-curve.js",
+  "type": "module",
+  "scripts": {
+    "dev": "esbuild ./hobby-curve.ts --target=esnext --bundle --format=esm --watch --outdir=./"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "esbuild": "^0.13.13"
+  }
+}
