@@ -47,59 +47,53 @@ import {
 
 const UNITY = 1
 
-export const makeSimpleChoices = (knots: Knot[], cyclic = true) => {
-  const deltaX: number[] = []
-  const deltaY: number[] = []
-  const delta: number[] = []
-  const psi: number[] = [0]
+const calcDeltaValues = (knots: Knot[], cyclic: boolean) => {
+  const deltaX = []
+  const deltaY = []
+  const delta = []
 
-  // knots.push(knots.shift())
-
-  const calcPsi = index => {
-    const lastIndex = index === 0 ? knots.length - 1 : index - 1
-    const sin = deltaY[lastIndex] / delta[lastIndex]
-    const cos = deltaX[lastIndex] / delta[lastIndex]
-    return Math.atan2(
-      deltaY[index] * cos - deltaX[index] * sin,
-      deltaX[index] * cos + deltaY[index] * sin
-    )
-  }
-
-  for (let i = 0; i < knots.length; i++) {
+  const end = cyclic ? knots.length : knots.length - 1
+  for (let i = 0; i < end; i++) {
     const knot = knots[i]
     const nextKnot = knots[i + 1] ?? knots[0]
 
-    knot.leftType = Type.Open
-    knot.rightType = Type.Open
-
-    const isFirst = i === 0
-    const isLast = i === knots.length - 1
-
-    if (cyclic || !isLast) {
-      deltaX[i] = nextKnot.x - knot.x
-      deltaY[i] = nextKnot.y - knot.y
-      delta[i] = Math.hypot(deltaX[i], deltaY[i])
-    }
-
-    if (!isFirst && (cyclic || !isLast)) {
-      psi.push(calcPsi(i))
-    }
+    deltaX[i] = nextKnot.x - knot.x
+    deltaY[i] = nextKnot.y - knot.y
+    delta[i] = Math.hypot(deltaX[i], deltaY[i])
   }
 
-  if (cyclic) {
-    psi.push(calcPsi(0))
+  return [deltaX, deltaY, delta]
+}
+
+const calcPsiValues = (
+  knots: Knot[],
+  deltaX: number[],
+  deltaY: number[],
+  delta: number[],
+  cyclic: boolean
+) => {
+  const psi: number[] = []
+
+  const [start, end] = cyclic ? [0, knots.length] : [1, knots.length - 1]
+  for (let i = start; i < end; i++) {
+    const lastIndex = i === 0 ? knots.length - 1 : i - 1
+    const sin = deltaY[lastIndex] / delta[lastIndex]
+    const cos = deltaX[lastIndex] / delta[lastIndex]
+
+    psi.push(
+      Math.atan2(
+        deltaY[i] * cos - deltaX[i] * sin,
+        deltaX[i] * cos + deltaY[i] * sin
+      )
+    )
   }
 
-  if (cyclic) {
-    knots[0].leftType = Type.EndCycle
-    knots[0].rightType = Type.Open
-  } else {
-    knots[0].leftType = Type.EndCycle
-    knots[0].rightType = Type.Curl
+  return psi
+}
 
-    knots[knots.length - 1].leftType = Type.Curl
-    knots[knots.length - 1].rightType = Type.Endpoint
-  }
+const makeChoices = (knots: Knot[], cyclic = true) => {
+  const [deltaX, deltaY, delta] = calcDeltaValues(knots, cyclic)
+  const psi = calcPsiValues(knots, deltaX, deltaY, delta, cyclic)
 
   const n = cyclic ? knots.length : knots.length - 1
 
@@ -107,146 +101,19 @@ export const makeSimpleChoices = (knots: Knot[], cyclic = true) => {
     deltaX.push(deltaX[0])
     deltaY.push(deltaY[0])
     delta.push(delta[0])
+
+    psi.push(psi.shift())
+    psi.push(psi[0])
+  } else {
+    psi.push(0)
   }
 
-  psi.push(cyclic ? psi[1] : 0)
+  psi.unshift(0)
+
   solveChoices(knots[0], knots[1], n, deltaX, deltaY, delta, psi)
 
   console.log('simple')
   console.log({ delta, deltaX, deltaY, psi })
-}
-
-export const makeChoices = (knots: Knot[]) => {
-  const firstKnot = knots[0]
-
-  // If consecutive knots are equal, join them explicitly.
-  let p = firstKnot
-  while (p) {
-    let q = p.next
-
-    if (knotsAreEqual(p, q)) {
-      p.rightType = Type.Explicit
-      if (p.leftType == Type.Open) {
-        p.leftType = Type.Curl
-        p.leftX = UNITY
-      }
-
-      q.leftType = Type.Explicit
-      if (q.rightType == Type.Open) {
-        q.rightType = Type.Curl
-        q.rightX = UNITY
-      }
-
-      p.rightX = p.x
-      p.rightY = p.y
-
-      q.leftX = p.x
-      q.leftY = p.y
-    }
-    p = q
-
-    if (p == firstKnot) break
-  }
-
-  // Find the first breakpoint `h` on the path or insert an artificial
-  // breakpoint if the path is an unbroken cycle .
-  let h = knots.find(knotIsBreakpoint) ?? firstKnot
-  if (h == firstKnot) h.leftType = Type.EndCycle
-
-  p = h
-  do {
-    // Fill in the control points between `p` and the next breakpoint, then
-    // advance `p` to that breakpoint.
-    let q = p.next
-    if (p.rightType >= Type.Given) {
-      // Advance until we find another breakpoint. The breakpoints are now
-      // `p` and `q`.
-      while (!knotIsBreakpoint(q)) {
-        q = q.next
-      }
-
-      // Calculate the turning angles `psi_k` and the distances `d(k, k+1)`.
-      let k = 0
-      let s = p
-      let n = knots.length
-
-      const deltaX = []
-      const deltaY = []
-      const delta = []
-      const psi: number[] = [0]
-
-      do {
-        let t = s.next
-
-        deltaX.push(t.x - s.x)
-        deltaY.push(t.y - s.y)
-        delta.push(Math.hypot(deltaX[k], deltaY[k]))
-
-        if (k > 0) {
-          const sine = deltaY[k - 1] / delta[k - 1]
-          const cosine = deltaX[k - 1] / delta[k - 1]
-          psi.push(
-            Math.atan2(
-              deltaY[k] * cosine - deltaX[k] * sine,
-              deltaX[k] * cosine + deltaY[k] * sine
-            )
-          )
-        }
-
-        k += 1
-        s = t
-        if (s == q) {
-          n = k
-        }
-      } while (k < n || s.leftType == Type.EndCycle)
-
-      if (k == n) {
-        psi.push(0)
-      } else {
-        // For closed paths:
-        psi.push(psi[1])
-      }
-
-      // Remove open types at the breakpoints.
-      if (q.leftType == Type.Open) {
-        const deltaX = q.rightX - q.x
-        const deltaY = q.rightY - q.y
-        if (deltaX ** 2 + deltaY ** 2 < Number.EPSILON ** 2) {
-          // Use curl if the controls are not usable for giving an angle.
-          q.leftType = Type.Curl
-          q.leftX = UNITY
-        } else {
-          q.leftType = Type.Given
-          q.leftX = Math.atan2(deltaY, deltaX)
-        }
-      }
-
-      if (p.rightType == Type.Open && p.leftType == Type.Explicit) {
-        const deltaX = p.x - p.leftX
-        const deltaY = p.y - p.leftY
-        if (deltaX ** 2 + deltaY ** 2 < Number.EPSILON ** 2) {
-          p.rightType = Type.Curl
-          p.rightX = UNITY
-        } else {
-          p.rightType = Type.Given
-          p.rightX = Math.atan2(deltaY, deltaX)
-        }
-      }
-
-      console.log('nope')
-      console.log({ delta, deltaX, deltaY, psi })
-
-      // solveChoices(p, q, n, deltaX, deltaY, delta, psi)
-    } else if (p.rightType == Type.Endpoint) {
-      // Give reasonable values for the unused control points between `p` and
-      // `q`.
-      p.rightX = p.x
-      p.rightY = p.y
-
-      q.leftX = q.x
-      q.leftY = q.y
-    }
-  } while (p && p != h)
 }
 
 const solveChoices = function (
@@ -493,22 +360,24 @@ const setControls = (
   q.leftType = Type.Explicit
 }
 
+const createKnot = (x, y, tension) => ({
+  x: x,
+  y: y,
+  leftType: Type.Open,
+  rightType: Type.Open,
+  leftY: tension,
+  rightY: tension,
+  leftX: tension,
+  rightX: tension,
+})
+
 const createKnots = (
   points: [number, number][],
   tension: any = 1,
-  cycle: any = false
+  cyclic: any = false
 ) => {
   // @ts-ignore (`next` will be set later)
-  const knots: Knot[] = points.map(([x, y]) => ({
-    x: x,
-    y: y,
-    leftType: Type.Open,
-    rightType: Type.Open,
-    leftY: tension,
-    rightY: tension,
-    leftX: tension,
-    rightX: tension,
-  }))
+  const knots: Knot[] = points.map(([x, y]) => createKnot(x, y, tension))
   const firstKnot = knots[0]
   const lastKnot = knots[knots.length - 1]
 
@@ -516,10 +385,15 @@ const createKnots = (
     knots[i].next = knots[i + 1] ?? firstKnot
   }
 
-  if (!cycle) {
-    lastKnot.rightType = Type.Endpoint
-    lastKnot.leftType = Type.Curl
+  if (cyclic) {
+    firstKnot.leftType = Type.EndCycle
+    firstKnot.rightType = Type.Open
+  } else {
+    firstKnot.leftType = Type.EndCycle
     firstKnot.rightType = Type.Curl
+
+    lastKnot.leftType = Type.Curl
+    lastKnot.rightType = Type.Endpoint
   }
 
   return knots
@@ -535,7 +409,7 @@ export const createHobbyCurve = (
   console.log('nope', knots)
 
   const knots2 = createKnots(points, tension, cyclic)
-  makeSimpleChoices(knots2, cyclic)
+  makeChoices(knots2, cyclic)
   console.log('simple', knots2)
 
   return knots2
