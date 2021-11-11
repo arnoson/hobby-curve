@@ -6,7 +6,7 @@
     <script src="mp_path.js"></script>
     <script src="test.js"></script>
     <script type="module" defer>
-      import { createHobbyCurve } from './dist/hobby-curve.js'
+      import { createHobbyCurve } from './dist/index.js'
 
       const ctx = document.getElementById('canvas-2').getContext('2d')
 
@@ -62,18 +62,22 @@
       function test(ctx) {
         ctx.clearRect(0, 0, 600, 770)
         const points = [
-          [0, 0],
-          [200, 133],
-          [130, 300],
-          [33, 233],
-          [100, 167],
+          { x: 0, y: 0 },
+          { x: 200, y: 133 },
+          { x: 130, y: 300 },
+          { x: 33, y: 233 },
+          { x: 100, y: 167 },
         ]
 
         console.time()
         const cyclic = false
+
         knots = createHobbyCurve(points, 1, cyclic)
+
         console.timeEnd()
         curve(ctx, knots, [50, 100], cyclic)
+
+        console.log(knots)
 
         // knots = createHobbyCurve(points, 1, false)
         // curve(ctx, knots, [300, 100], false)

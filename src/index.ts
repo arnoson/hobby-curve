@@ -1,14 +1,10 @@
-// @ts-check
-
 /*
-I cleaned up and rewrote vlad-x's hobby-curves
+I cleaned up, heavily refactored and simplified up vlad-x's hobby-curves
 (https://github.com/vlad-x/hobby-curves) to modern javascript/typescript and
 added some of the comments from the PyX implementation for better understanding.
 */
 
 /* Metapost/Hobby curves
-
-Ported to javascript from the PyX implementation (http://pyx.sourceforge.net/)
 Copyright (C) 2011 Michael Schindler <m-schindler@users.sourceforge.net>
 
 This program is distributed in the hope that it will be useful,
@@ -33,8 +29,11 @@ svn://tug.org/texlive/trunk/Build/source/texk/web2c/mplibdir revision 22737 #
 (2011-05-31)
 */
 
-import { Type } from './utils'
-import { makeChoices } from './makeChoices'
+import { Type, Point, sinCos } from './utils'
+import { calcDeltaValues } from './calcDeltaValues'
+import { calcPsiValues } from './calcPsiValues'
+import { calcThetaValues } from './calcThetaValues'
+import { setControls } from './setControls'
 
 const createKnot = (x: number, y: number, tension: number) => ({
   x: x,
@@ -49,12 +48,12 @@ const createKnot = (x: number, y: number, tension: number) => ({
 })
 
 const createKnots = (
-  points: [number, number][],
+  points: Point[],
   tension: any = 1,
   cyclic: any = false
 ) => {
   // @ts-ignore (`next` und `prev` will be set immediately)
-  const knots: Knot[] = points.map(([x, y]) => createKnot(x, y, tension))
+  const knots: Knot[] = points.map(({ x, y }) => createKnot(x, y, tension))
   const firstKnot = knots[0]
   const lastKnot = knots[knots.length - 1]
 
@@ -79,12 +78,24 @@ const createKnots = (
 }
 
 export const createHobbyCurve = (
-  points: [number, number][],
+  points: Point[],
   tension = 1,
   cyclic = false
 ) => {
   const knots = createKnots(points, tension, cyclic)
-  makeChoices(knots, cyclic)
+  calcDeltaValues(knots, cyclic)
+  calcPsiValues(knots, cyclic)
+  calcThetaValues(knots, cyclic)
+
+  const passes = cyclic ? knots.length + 1 : knots.length
+
+  for (let i = 0; i < passes - 1; i++) {
+    const knot = knots[i] ?? knots[0]
+    const nextKnot = knot.next
+    const [ct, st] = sinCos(knot.theta)
+    const [cf, sf] = sinCos(-nextKnot.psi - nextKnot.theta)
+    setControls(knot, st, ct, sf, cf)
+  }
 
   return knots
 }

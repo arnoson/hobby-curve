@@ -7,6 +7,11 @@ export enum Type {
   EndCycle,
 }
 
+export interface Point {
+  x: number
+  y: number
+}
+
 export interface Knot {
   x: number
   y: number
@@ -28,6 +33,7 @@ export interface Knot {
   deltaY?: number
   delta?: number
   psi?: number
+  theta?: number
 }
 
 export const curlRatio = function (

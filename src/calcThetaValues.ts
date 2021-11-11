@@ -1,9 +1,8 @@
-import { Knot, Type, curlRatio, sinCos } from './utils'
-import { setControls } from './setControls'
+import { Knot, Type, curlRatio } from './utils'
 
 const UNITY = 1
 
-export const solveChoices = function (knots: Knot[], cyclic: boolean) {
+export const calcThetaValues = function (knots: Knot[], cyclic: boolean) {
   // The 'matrix' is in tridiagonal form, the solution is obtained by Gaussian
   // elimination. `uu` and `ww` are of type fraction, vv and theta are of type
   // angle.
@@ -13,18 +12,21 @@ export const solveChoices = function (knots: Knot[], cyclic: boolean) {
   const ww = []
   // Angles ('rhs' entries)
   const vv = []
-  // Solution of the linear system of equations.
-  const theta = []
 
   const firstKnot = knots[0]
   const secondKnot = knots[1]
+  const lastKnot = knots[knots.length - 1]
   const passes = cyclic ? knots.length + 1 : knots.length
 
   // Solve first knot.
-  if (firstKnot.rightType == Type.Curl) {
+  if (!cyclic) {
     const nextKnot = firstKnot.next
 
+    console.log(nextKnot.leftType)
+
     if (nextKnot.leftType == Type.Curl) {
+      console.log('je')
+
       // Reduce to simple case of straight line and return.
       firstKnot.rightType = Type.Explicit
       nextKnot.leftType = Type.Explicit
@@ -49,11 +51,9 @@ export const solveChoices = function (knots: Knot[], cyclic: boolean) {
       ww[0] = 0
     }
   } else {
-    if (firstKnot.rightType == Type.Open) {
-      uu[0] = 0
-      vv[0] = 0
-      ww[0] = 1
-    }
+    uu[0] = 0
+    vv[0] = 0
+    ww[0] = 1
   }
 
   // Solve remaining knots (and cycle back to first if path is cyclic).
@@ -117,7 +117,7 @@ export const solveChoices = function (knots: Knot[], cyclic: boolean) {
         }
 
         aa = aa / (1 - bb)
-        theta[passes - 1] = aa
+        firstKnot.theta = aa
         vv[0] = aa
         for (let i = 1; i < passes - 1; i++) {
           vv[i] = vv[i] + aa * ww[i]
@@ -131,21 +131,13 @@ export const solveChoices = function (knots: Knot[], cyclic: boolean) {
       const lt = Math.abs(knot.leftY)
       const rt = Math.abs(prevKnot!.rightY)
       const ff = curlRatio(cc, lt, rt)
-      theta[passes - 1] = -((vv[passes - 2] * ff) / (1 - ff * uu[passes - 2]))
+      lastKnot.theta = -((vv[passes - 2] * ff) / (1 - ff * uu[passes - 2]))
       break
     }
   }
 
-  // Finish choosing angles and assigning control points.
-  for (let i = passes - 2; i > -1; i -= 1) {
-    theta[i] = vv[i] - theta[i + 1] * uu[i]
-  }
-
-  for (let i = 0; i < passes - 1; i++) {
-    const knot = knots[i] ?? firstKnot
-    const nextKnot = knot.next
-    const [ct, st] = sinCos(theta[i])
-    const [cf, sf] = sinCos(-nextKnot.psi - theta[i + 1])
-    setControls(knot, st, ct, sf, cf)
+  for (let i = passes - 2; i >= 0; i -= 1) {
+    const knot = knots[i]
+    knot.theta = vv[i] - knot.next.theta * uu[i]
   }
 }
