@@ -1,19 +1,26 @@
 {
   "name": "hobby-curve",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "",
-  "main": "hobby-curve.js",
+  "main": "dist/index.js",
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "scripts": {
     "dev": "esbuild ./src/index.ts --target=esnext --bundle --format=esm --watch --outdir=./dist",
-    "build": "esbuild ./src/index.ts --target=esnext --bundle --format=esm --minify --outdir=./dist"
+    "build": "esbuild ./src/index.ts --target=esnext --bundle --format=esm --minify --outdir=./dist",
+    "test": "jest",
+    "prepublishOnly": "npm run build",
+    "np": "np --no-2fa"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@swc/jest": "^0.2.5",
     "@types/jest": "^27.0.2",
     "esbuild": "^0.13.13",
     "jest": "^27.3.1",
-    "@swc/jest": "^0.2.5"
+    "np": "^7.5.0"
   }
 }
