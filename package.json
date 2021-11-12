@@ -5,11 +5,15 @@
   "main": "hobby-curve.js",
   "type": "module",
   "scripts": {
-    "dev": "esbuild ./src/index.ts --target=esnext --bundle --format=esm --watch --outdir=./dist"
+    "dev": "esbuild ./src/index.ts --target=esnext --bundle --format=esm --watch --outdir=./dist",
+    "build": "esbuild ./src/index.ts --target=esnext --bundle --format=esm --minify --outdir=./dist"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "esbuild": "^0.13.13"
+    "@types/jest": "^27.0.2",
+    "esbuild": "^0.13.13",
+    "jest": "^27.3.1",
+    "@swc/jest": "^0.2.5"
   }
 }

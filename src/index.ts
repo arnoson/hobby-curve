@@ -1,33 +1,20 @@
-/*
-I cleaned up, heavily refactored and simplified up vlad-x's hobby-curves
-(https://github.com/vlad-x/hobby-curves) to modern javascript/typescript and
-added some of the comments from the PyX implementation for better understanding.
-*/
-
-/* Metapost/Hobby curves
-Copyright (C) 2011 Michael Schindler <m-schindler@users.sourceforge.net>
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-*/
-
-/* Internal functions of MetaPost
-This file re-implements some of the functionality of MetaPost
-(http://tug.org/metapost). MetaPost was developed by John D. Hobby and
-others. The code of Metapost is in the public domain, which we understand as
-an implicit permission to reuse the code here (see the comment at
-http://www.gnu.org/licenses/license-list.html)
-
-This file is based on the MetaPost version distributed by TeXLive:
-svn://tug.org/texlive/trunk/Build/source/texk/web2c/mplibdir revision 22737 #
-(2011-05-31)
-*/
+/**
+ * The mathematics of this code is based on vlad-x's javascript port.
+ * (https://github.com/vlad-x/hobby-curves) of Michael Schindler's Python
+ * Implementation of some internal functions of MetaPost, developed by John
+ * D. Hobby and others.
+ * Quoted by Michael Schindler: "Metapost's code is in the public domain,
+ * which we take as implicit permission to reuse the code here.
+ * (see the comment at http://www.gnu.org/licenses/license-list.html)."
+ *
+ * I heavily refactored and simplified the code from vlad-x, ported it to
+ * Typescript and was inspired by Luke Trujillo's javascript implementation
+ * (https://github.com/ltrujello/Hobby_Curve_Algorithm/tree/main/javascript)
+ * especially for naming and structuring things.
+ *
+ * I also added and modified some of the comments from Michael Schindler's
+ * python implementation to get a better understanding.
+ */
 
 import { Point } from './utils'
 import { calcDeltaValues } from './calcDeltaValues'
@@ -39,19 +26,28 @@ import { setControls, setControlsLine } from './setControls'
 const createKnot = (x: number, y: number, tension: number) => ({
   x: x,
   y: y,
+
   leftY: tension,
   rightY: tension,
+
   leftX: tension,
   rightX: tension,
+
+  deltaX: 0,
+  deltaY: 0,
+  delta: 0,
+
+  theta: 0,
+  phi: 0,
   psi: 0,
 })
 
-export const createHobbyKnots = (
+const createHobbyKnots = (
   points: Point[],
   tension: any = 1,
   cyclic = false
 ) => {
-  // @ts-ignore (`next` und `prev` will be set immediately)
+  // @ts-ignore (`next` und `prev` are missing, but will be set immediately)
   const knots: Knot[] = points.map(({ x, y }) => createKnot(x, y, tension))
   const firstKnot = knots[0]
   const lastKnot = knots[knots.length - 1]
@@ -79,20 +75,45 @@ export const createHobbyKnots = (
   return knots
 }
 
-export const createHobbyCurve = (
+/**
+ * Create a hobby curve and return a list of bezier entries in the format
+ * `{ startControl, endControl, point }`.
+ */
+export const createHobbyBezier = (
   points: Point[],
   tension = 1,
   cyclic = false
 ) => {
   const knots = createHobbyKnots(points, tension, cyclic)
+  const bezier: { startControl: Point; endControl: Point; point: Point }[] = []
 
-  let bezierCommands = ''
   const end = cyclic ? knots.length : knots.length - 1
   for (let i = 0; i < end; i++) {
     const knot = knots[i]
-    const nextKnot = knot.next
-    bezierCommands += `${knot.rightX},${knot.rightY} ${nextKnot.leftX},${nextKnot.leftY} ${nextKnot.x},${nextKnot.y} `
+    bezier.push({
+      startControl: { x: knot.rightX, y: knot.rightY },
+      endControl: { x: knot.next.leftX, y: knot.next.leftY },
+      point: { x: knot.next.x, y: knot.next.y },
+    })
   }
 
-  return `M ${knots[0].x},${knots[0].y} C ${bezierCommands}`
+  return bezier
+}
+
+/**
+ * Create a hobby curve and return it's path definition.
+ */
+export const createHobbyCurve = (
+  points: Point[],
+  tension = 1,
+  cyclic = false
+) => {
+  const bezier = createHobbyBezier(points, tension, cyclic)
+
+  const toString = (point: Point) => [point.x, point.y].join(',')
+  const bezierCommands = bezier.map(({ startControl, endControl, point }) =>
+    [toString(startControl), toString(endControl), toString(point)].join(' ')
+  )
+
+  return `M ${points[0].x},${points[0].y} C ${bezierCommands}`
 }

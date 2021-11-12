@@ -1,0 +1,465 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`createHobbyBezier handles 2-point paths 1`] = `
+Array [
+  Object {
+    "endControl": Object {
+      "x": 288.66666666666663,
+      "y": -0.3333333333333144,
+    },
+    "point": Object {
+      "x": 200,
+      "y": 133,
+    },
+    "startControl": Object {
+      "x": 88.66666666666666,
+      "y": -133.33333333333331,
+    },
+  },
+  Object {
+    "endControl": Object {
+      "x": -88.66666666666666,
+      "y": 133.33333333333331,
+    },
+    "point": Object {
+      "x": 0,
+      "y": 0,
+    },
+    "startControl": Object {
+      "x": 111.33333333333334,
+      "y": 266.3333333333333,
+    },
+  },
+]
+`;
+
+exports[`createHobbyBezier handles 2-point paths 2`] = `
+Array [
+  Object {
+    "endControl": Object {
+      "x": 133.33333333333334,
+      "y": 88.66666666666667,
+    },
+    "point": Object {
+      "x": 200,
+      "y": 133,
+    },
+    "startControl": Object {
+      "x": 66.66666666666666,
+      "y": 44.33333333333333,
+    },
+  },
+]
+`;
+
+exports[`createHobbyBezier handles cyclic and non-cyclic paths 1`] = `
+Array [
+  Object {
+    "endControl": Object {
+      "x": 202.2726597318875,
+      "y": -62.08929209418508,
+    },
+    "point": Object {
+      "x": 200,
+      "y": 133,
+    },
+    "startControl": Object {
+      "x": 17.127431909906143,
+      "y": -89.74523875089386,
+    },
+  },
+  Object {
+    "endControl": Object {
+      "x": 189.20267180945046,
+      "y": 273.5595327118616,
+    },
+    "point": Object {
+      "x": 130,
+      "y": 300,
+    },
+    "startControl": Object {
+      "x": 199.21702504025157,
+      "y": 200.2120108793997,
+    },
+  },
+  Object {
+    "endControl": Object {
+      "x": 15.74830065248955,
+      "y": 279.98057448405984,
+    },
+    "point": Object {
+      "x": 33,
+      "y": 233,
+    },
+    "startControl": Object {
+      "x": 72.32351951032112,
+      "y": 325.75885596161345,
+    },
+  },
+  Object {
+    "endControl": Object {
+      "x": 87.60189583018445,
+      "y": 197.254578946683,
+    },
+    "point": Object {
+      "x": 100,
+      "y": 167,
+    },
+    "startControl": Object {
+      "x": 44.337677624281866,
+      "y": 202.12474548887275,
+    },
+  },
+  Object {
+    "endControl": Object {
+      "x": -13.489254929089425,
+      "y": 70.68172336347855,
+    },
+    "point": Object {
+      "x": 0,
+      "y": 0,
+    },
+    "startControl": Object {
+      "x": 131.5922197261313,
+      "y": 89.90681763005249,
+    },
+  },
+]
+`;
+
+exports[`createHobbyBezier handles cyclic and non-cyclic paths 2`] = `
+Array [
+  Object {
+    "endControl": Object {
+      "x": 171.7811681131284,
+      "y": 48.00234580207959,
+    },
+    "point": Object {
+      "x": 200,
+      "y": 133,
+    },
+    "startControl": Object {
+      "x": 89.29718943918873,
+      "y": -6.849500016090294,
+    },
+  },
+  Object {
+    "endControl": Object {
+      "x": 197.16569405952507,
+      "y": 283.6273089083985,
+    },
+    "point": Object {
+      "x": 130,
+      "y": 300,
+    },
+    "startControl": Object {
+      "x": 223.64739995026858,
+      "y": 204.22809093270655,
+    },
+  },
+  Object {
+    "endControl": Object {
+      "x": 34.380121098298794,
+      "y": 280.179075007001,
+    },
+    "point": Object {
+      "x": 33,
+      "y": 233,
+    },
+    "startControl": Object {
+      "x": 82.08937210171507,
+      "y": 311.6789667934957,
+    },
+  },
+  Object {
+    "endControl": Object {
+      "x": 62.73018959428872,
+      "y": 165.34854639397165,
+    },
+    "point": Object {
+      "x": 100,
+      "y": 167,
+    },
+    "startControl": Object {
+      "x": 31.909149699518927,
+      "y": 195.709570767924,
+    },
+  },
+]
+`;
+
+exports[`createHobbyBezier handles high tension 1`] = `
+Array [
+  Object {
+    "endControl": Object {
+      "x": 193.13386237171488,
+      "y": 97.17379981667526,
+    },
+    "point": Object {
+      "x": 200,
+      "y": 133,
+    },
+    "startControl": Object {
+      "x": 12.157922585803924,
+      "y": -18.16527386600955,
+    },
+  },
+  Object {
+    "endControl": Object {
+      "x": 146.58893158115984,
+      "y": 297.78978588457517,
+    },
+    "point": Object {
+      "x": 130,
+      "y": 300,
+    },
+    "startControl": Object {
+      "x": 203.6456020166292,
+      "y": 152.02205791775114,
+    },
+  },
+  Object {
+    "endControl": Object {
+      "x": 32.28550270549024,
+      "y": 244.26217321503026,
+    },
+    "point": Object {
+      "x": 33,
+      "y": 233,
+    },
+    "startControl": Object {
+      "x": 117.28176710390673,
+      "y": 301.69450441896635,
+    },
+  },
+  Object {
+    "endControl": Object {
+      "x": 97.0453960963215,
+      "y": 174.61489244465952,
+    },
+    "point": Object {
+      "x": 100,
+      "y": 167,
+    },
+    "startControl": Object {
+      "x": 33.56879807608968,
+      "y": 224.03439228318814,
+    },
+  },
+  Object {
+    "endControl": Object {
+      "x": -13.323517723023173,
+      "y": 19.906801230988783,
+    },
+    "point": Object {
+      "x": 0,
+      "y": 0,
+    },
+    "startControl": Object {
+      "x": 106.79682646699854,
+      "y": 149.48255800150702,
+    },
+  },
+]
+`;
+
+exports[`createHobbyBezier handles high tension 2`] = `
+Array [
+  Object {
+    "endControl": Object {
+      "x": 192.25232442538717,
+      "y": 82.97833889609893,
+    },
+    "point": Object {
+      "x": 200,
+      "y": 133,
+    },
+    "startControl": Object {
+      "x": -10.128850571697496,
+      "y": -29.264839684712893,
+    },
+  },
+  Object {
+    "endControl": Object {
+      "x": 146.53601039740755,
+      "y": 297.91976580586646,
+    },
+    "point": Object {
+      "x": 130,
+      "y": 300,
+    },
+    "startControl": Object {
+      "x": 202.95316078090127,
+      "y": 152.0666228012467,
+    },
+  },
+  Object {
+    "endControl": Object {
+      "x": 34.04574657244422,
+      "y": 244.2531062479157,
+    },
+    "point": Object {
+      "x": 33,
+      "y": 233,
+    },
+    "startControl": Object {
+      "x": 118.19764809062058,
+      "y": 301.4847387866264,
+    },
+  },
+  Object {
+    "endControl": Object {
+      "x": 104.55506630339977,
+      "y": 152.68468266701754,
+    },
+    "point": Object {
+      "x": 100,
+      "y": 167,
+    },
+    "startControl": Object {
+      "x": 31.162885786451195,
+      "y": 213.23111719477004,
+    },
+  },
+]
+`;
+
+exports[`createHobbyBezier handles low tension 1`] = `
+Array [
+  Object {
+    "endControl": Object {
+      "x": -97.58399849640273,
+      "y": 1046.4920710323067,
+    },
+    "point": Object {
+      "x": 200,
+      "y": 133,
+    },
+    "startControl": Object {
+      "x": -958.4026556309514,
+      "y": 66.99514668645821,
+    },
+  },
+  Object {
+    "endControl": Object {
+      "x": 373.2193448539864,
+      "y": 982.2524095148347,
+    },
+    "point": Object {
+      "x": 130,
+      "y": 300,
+    },
+    "startControl": Object {
+      "x": 424.3505586762873,
+      "y": -555.6877571306446,
+    },
+  },
+  Object {
+    "endControl": Object {
+      "x": -401.1829761298074,
+      "y": 329.9248157967111,
+    },
+    "point": Object {
+      "x": 33,
+      "y": 233,
+    },
+    "startControl": Object {
+      "x": 95.42060754055463,
+      "y": 203.00165540212777,
+    },
+  },
+  Object {
+    "endControl": Object {
+      "x": 43.93592731724532,
+      "y": 261.40077959610556,
+    },
+    "point": Object {
+      "x": 100,
+      "y": 167,
+    },
+    "startControl": Object {
+      "x": 139.68694685728406,
+      "y": 209.18374454883224,
+    },
+  },
+  Object {
+    "endControl": Object {
+      "x": 292.0205413561221,
+      "y": -20.413089309245105,
+    },
+    "point": Object {
+      "x": 0,
+      "y": 0,
+    },
+    "startControl": Object {
+      "x": 252.26184849743314,
+      "y": -89.37875582526374,
+    },
+  },
+]
+`;
+
+exports[`createHobbyBezier handles low tension 2`] = `
+Array [
+  Object {
+    "endControl": Object {
+      "x": -75.51395986470311,
+      "y": 222.8782686605149,
+    },
+    "point": Object {
+      "x": 200,
+      "y": 133,
+    },
+    "startControl": Object {
+      "x": -474.70993135830554,
+      "y": -835.2691069767832,
+    },
+  },
+  Object {
+    "endControl": Object {
+      "x": -230.8620846323861,
+      "y": 928.0147736118703,
+    },
+    "point": Object {
+      "x": 130,
+      "y": 300,
+    },
+    "startControl": Object {
+      "x": 888.5954047155858,
+      "y": -91.633854537954,
+    },
+  },
+  Object {
+    "endControl": Object {
+      "x": 51.098593650518225,
+      "y": 348.14475910237087,
+    },
+    "point": Object {
+      "x": 33,
+      "y": 233,
+    },
+    "startControl": Object {
+      "x": 264.19987758735533,
+      "y": 66.44954033444631,
+    },
+  },
+  Object {
+    "endControl": Object {
+      "x": 473.29449500776747,
+      "y": 120.40364824478343,
+    },
+    "point": Object {
+      "x": 100,
+      "y": 167,
+    },
+    "startControl": Object {
+      "x": 19.047842084232496,
+      "y": 144.23521013892218,
+    },
+  },
+]
+`;
+
+exports[`createHobbyCurve creates an svg path description 1`] = `"M 0,0 C 17.127431909906143,-89.74523875089386 202.2726597318875,-62.08929209418508 200,133,199.21702504025157,200.2120108793997 189.20267180945046,273.5595327118616 130,300,72.32351951032112,325.75885596161345 15.74830065248955,279.98057448405984 33,233,44.337677624281866,202.12474548887275 87.60189583018445,197.254578946683 100,167,131.5922197261313,89.90681763005249 -13.489254929089425,70.68172336347855 0,0"`;
+
+exports[`createHobbyCurve creates an svg path description 2`] = `"M 0,0 C 89.29718943918873,-6.849500016090294 171.7811681131284,48.00234580207959 200,133,223.64739995026858,204.22809093270655 197.16569405952507,283.6273089083985 130,300,82.08937210171507,311.6789667934957 34.380121098298794,280.179075007001 33,233,31.909149699518927,195.709570767924 62.73018959428872,165.34854639397165 100,167"`;

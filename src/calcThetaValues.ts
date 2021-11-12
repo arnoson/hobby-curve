@@ -1,7 +1,5 @@
 import { Knot, curlRatio } from './utils'
 
-const UNITY = 1
-
 export const calcThetaValues = function (knots: Knot[], cyclic: boolean) {
   // The 'matrix' is in tridiagonal form, the solution is obtained by Gaussian
   // elimination. `uu` and `ww` are of type fraction, vv and theta are of type
@@ -16,15 +14,16 @@ export const calcThetaValues = function (knots: Knot[], cyclic: boolean) {
   const firstKnot = knots[0]
   const secondKnot = knots[1]
   const lastKnot = knots[knots.length - 1]
+  // Cycle back to the first knot on cyclic paths.
   const passes = cyclic ? knots.length + 1 : knots.length
 
-  // Solve first knot.
+  // First pass
   if (!cyclic) {
     const nextKnot = firstKnot.next
-    const cc = firstKnot.rightX
-    const lt = Math.abs(nextKnot.leftY)
-    const rt = Math.abs(firstKnot.rightY)
-    uu[0] = curlRatio(cc, rt, lt)
+    const gamma = firstKnot.rightX
+    const leftTension = Math.abs(nextKnot.leftY)
+    const rightTension = Math.abs(firstKnot.rightY)
+    uu[0] = curlRatio(gamma, rightTension, leftTension)
     vv[0] = -(secondKnot.psi * uu[0])
     ww[0] = 0
   } else {
@@ -33,7 +32,7 @@ export const calcThetaValues = function (knots: Knot[], cyclic: boolean) {
     ww[0] = 1
   }
 
-  // Solve remaining knots (and cycle back to first if path is cyclic).
+  // Remaining passes
   for (let i = 1; i < passes; i++) {
     const knot = knots[i] ?? firstKnot
     const nextKnot = knot.next
@@ -47,29 +46,27 @@ export const calcThetaValues = function (knots: Knot[], cyclic: boolean) {
       // Calculate the values:
       // aa = Ak/Bk, bb = Dk/Ck, dd = (3-alpha_{k-1})d(k,k+1),
       // ee = (3-beta_{k+1})d(k-1,k), cc=(Bk-uk-Ak)/Bk
-      let aa = UNITY / (3.0 * Math.abs(prevKnot!.rightY) - UNITY)
-      let dd = knot.delta * (3 - UNITY / Math.abs(prevKnot!.rightY))
+      let aa = 1 / (3 * Math.abs(prevKnot!.rightY) - 1)
+      let dd = knot.delta * (3 - 1 / Math.abs(prevKnot.rightY))
 
-      let bb = UNITY / (3 * Math.abs(nextKnot.leftY) - UNITY)
-      let ee = prevKnot.delta * (3 - UNITY / Math.abs(nextKnot.leftY))
+      let bb = 1 / (3 * Math.abs(nextKnot.leftY) - 1)
+      let ee = prevKnot.delta * (3 - 1 / Math.abs(nextKnot.leftY))
 
       const cc = 1 - uu[i - 1] * aa
 
       // Calculate the ratio ff = Ck/(Ck + Bk - uk-1Ak).
       dd = dd * cc
-      const lt = Math.abs(knot.leftY)
-      const rt = Math.abs(knot.rightY)
-      if (lt < rt) {
-        dd *= (lt / rt) ** 2
+      const tensionLeft = Math.abs(knot.leftY)
+      const tensionRight = Math.abs(knot.rightY)
+      if (tensionLeft < tensionRight) {
+        dd *= (tensionLeft / tensionRight) ** 2
       } else {
-        if (lt > rt) {
-          ee *= (rt / lt) ** 2
-        }
+        ee *= (tensionRight / tensionLeft) ** 2
       }
       let ff = ee / (ee + dd)
       uu[i] = ff * bb
 
-      // Calculate the values of vk and wk
+      // Calculate the values of vk and wk.
       let acc = -(nextKnot.psi * uu[i])
       ff = (1 - ff) / cc
       acc = acc - knot.psi * ff
@@ -99,17 +96,16 @@ export const calcThetaValues = function (knots: Knot[], cyclic: boolean) {
       }
     } else {
       // Last knot on a non-cyclic path.
-      const cc = knot.leftX
-      const lt = Math.abs(knot.leftY)
-      const rt = Math.abs(prevKnot!.rightY)
-      const ff = curlRatio(cc, lt, rt)
+      const gamma = knot.leftX
+      const tensionLeft = Math.abs(knot.leftY)
+      const tensionRight = Math.abs(prevKnot.rightY)
+      const ff = curlRatio(gamma, tensionLeft, tensionRight)
       lastKnot.theta = -((vv[passes - 2] * ff) / (1 - ff * uu[passes - 2]))
       break
     }
   }
 
   for (let i = passes - 2; i >= 0; i -= 1) {
-    const knot = knots[i]
-    knot.theta = vv[i] - knot.next.theta * uu[i]
+    knots[i].theta = vv[i] - knots[i].next.theta * uu[i]
   }
 }

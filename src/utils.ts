@@ -7,25 +7,22 @@ export interface Knot {
   x: number
   y: number
 
-  handleIn: { x: number; y: number }
-  handleOut: { x: number; y: number }
-
   leftY: number
   rightY: number
 
   leftX: number
   rightX: number
 
+  deltaX?: number // Horizontal distance between this point and next.
+  deltaY?: number // Vertical between this point and next.
+  delta?: number // Distance between this point and next.
+
+  psi?: number // Offset angle.
+  phi?: number // Another offset angle.
+  theta?: number // Angle of polygonal line from this point to next.
+
   next: Knot
   prev: Knot
-
-  deltaX?: number
-  deltaY?: number
-  delta?: number
-
-  psi?: number
-  phi?: number
-  theta?: number
 }
 
 export const curlRatio = function (
