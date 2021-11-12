@@ -42,11 +42,7 @@ const createKnot = (x: number, y: number, tension: number) => ({
   psi: 0,
 })
 
-const createHobbyKnots = (
-  points: Point[],
-  tension: any = 1,
-  cyclic = false
-) => {
+const createKnots = (points: Point[], tension: any = 1, cyclic = false) => {
   // @ts-ignore (`next` und `prev` are missing, but will be set immediately)
   const knots: Knot[] = points.map(({ x, y }) => createKnot(x, y, tension))
   const firstKnot = knots[0]
@@ -83,7 +79,7 @@ export const createHobbyBezier = (
   points: Point[],
   { tension = 1, cyclic = false } = {}
 ) => {
-  const knots = createHobbyKnots(points, tension, cyclic)
+  const knots = createKnots(points, tension, cyclic)
   const bezier: { startControl: Point; endControl: Point; point: Point }[] = []
 
   const end = cyclic ? knots.length : knots.length - 1
