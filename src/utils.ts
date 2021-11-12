@@ -7,6 +7,9 @@ export interface Knot {
   x: number
   y: number
 
+  handleIn: { x: number; y: number }
+  handleOut: { x: number; y: number }
+
   leftY: number
   rightY: number
 
@@ -15,11 +18,11 @@ export interface Knot {
 
   next: Knot
   prev: Knot
-  index?: number
 
   deltaX?: number
   deltaY?: number
   delta?: number
+
   psi?: number
   phi?: number
   theta?: number

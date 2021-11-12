@@ -122,6 +122,14 @@ var calcThetaValues = function(knots, cyclic) {
 };
 
 // src/setControls.ts
+var setControlsLine = (knotA, knotB) => {
+  let factor = 1 / (3 * knotA.rightY);
+  knotA.rightX = knotA.x + knotA.deltaX * factor;
+  knotA.rightY = knotA.y + knotA.deltaY * factor;
+  factor = 1 / (3 * knotB.leftY);
+  knotB.leftX = knotB.x - knotA.deltaX * factor;
+  knotB.leftY = knotB.y - knotA.deltaY * factor;
+};
 var setControls = (knotA, knotB) => {
   const thetaSin = Math.sin(knotA.theta);
   const thetaCos = Math.cos(knotA.theta);
@@ -154,24 +162,22 @@ var createHobbyKnots = (points, tension = 1, cyclic = false) => {
   for (let i = 0; i < knots.length; i++) {
     knots[i].next = knots[i + 1] ?? firstKnot;
     knots[i].prev = knots[i - 1] ?? lastKnot;
-    knots[i].index = i;
   }
   calcDeltaValues(knots, cyclic);
+  if (points.length === 2 && !cyclic) {
+    setControlsLine(firstKnot, lastKnot);
+    return knots;
+  }
   calcPsiValues(knots, cyclic);
   calcThetaValues(knots, cyclic);
   calcPhiValues(knots, cyclic);
   const end = cyclic ? knots.length : knots.length - 1;
   for (let i = 0; i < end; i++) {
-    const knot = knots[i];
-    setControls(knot, knot.next);
+    setControls(knots[i], knots[i].next);
   }
   return knots;
 };
 var createHobbyCurve = (points, tension = 1, cyclic = false) => {
-  const knots = createHobbyKnots(points, tension, cyclic);
-  return createHobbyKnots(points, tension, cyclic);
-};
-var createHobbyData = (points, tension = 1, cyclic = false) => {
   const knots = createHobbyKnots(points, tension, cyclic);
   let bezierCommands = "";
   const end = cyclic ? knots.length : knots.length - 1;
@@ -184,6 +190,5 @@ var createHobbyData = (points, tension = 1, cyclic = false) => {
 };
 export {
   createHobbyCurve,
-  createHobbyData,
   createHobbyKnots
 };

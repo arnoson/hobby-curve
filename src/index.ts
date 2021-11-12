@@ -34,7 +34,7 @@ import { calcDeltaValues } from './calcDeltaValues'
 import { calcPsiValues } from './calcPsiValues'
 import { calcPhiValues } from './calcPhiValues'
 import { calcThetaValues } from './calcThetaValues'
-import { setControls } from './setControls'
+import { setControls, setControlsLine } from './setControls'
 
 const createKnot = (x: number, y: number, tension: number) => ({
   x: x,
@@ -53,39 +53,33 @@ export const createHobbyKnots = (
 ) => {
   // @ts-ignore (`next` und `prev` will be set immediately)
   const knots: Knot[] = points.map(({ x, y }) => createKnot(x, y, tension))
-
   const firstKnot = knots[0]
   const lastKnot = knots[knots.length - 1]
   for (let i = 0; i < knots.length; i++) {
     knots[i].next = knots[i + 1] ?? firstKnot
     knots[i].prev = knots[i - 1] ?? lastKnot
-    knots[i].index = i
   }
 
   calcDeltaValues(knots, cyclic)
+  // If we only have two points on a non-cyclic path we can take a shortcut and
+  // just set the control points as a straight line.
+  if (points.length === 2 && !cyclic) {
+    setControlsLine(firstKnot, lastKnot)
+    return knots
+  }
   calcPsiValues(knots, cyclic)
   calcThetaValues(knots, cyclic)
   calcPhiValues(knots, cyclic)
 
   const end = cyclic ? knots.length : knots.length - 1
   for (let i = 0; i < end; i++) {
-    const knot = knots[i]
-    setControls(knot, knot.next)
+    setControls(knots[i], knots[i].next)
   }
 
   return knots
 }
 
 export const createHobbyCurve = (
-  points: Point[],
-  tension = 1,
-  cyclic = false
-) => {
-  const knots = createHobbyKnots(points, tension, cyclic)
-  return createHobbyKnots(points, tension, cyclic)
-}
-
-export const createHobbyData = (
   points: Point[],
   tension = 1,
   cyclic = false

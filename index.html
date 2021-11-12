@@ -6,95 +6,22 @@
     <script src="mp_path.js"></script>
     <script src="test.js"></script>
     <script type="module" defer>
-      import { createHobbyCurve, createHobbyData } from './dist/index.js'
+      import { createHobbyCurve } from './dist/index.js'
 
-      const ctx = document.getElementById('canvas-2').getContext('2d')
+      const points = [
+        { x: 0, y: 0 },
+        { x: 200, y: 133 },
+        { x: 130, y: 300 },
+        { x: 33, y: 233 },
+        { x: 100, y: 167 },
+      ]
 
-      function circle(ctx, x, y, r) {
-        ctx.beginPath()
-        ctx.arc(x, y, r, 0, 2 * Math.PI)
-        ctx.stroke()
-      }
-
-      function curve(ctx, knots, offset, cycle) {
-        var off = offset || [0, 0]
-
-        ctx.strokeStyle = 'red'
-        ctx.beginPath()
-
-        for (var i = 0; i < knots.length - 1; i++) {
-          console.log(
-            knots[i].rightX,
-            knots[i].rightY,
-            knots[i + 1].leftX,
-            knots[i + 1].leftY
-          )
-
-          ctx.moveTo(off[0] + knots[i].x, off[1] + knots[i].y)
-          ctx.bezierCurveTo(
-            off[0] + knots[i].rightX,
-            off[1] + knots[i].rightY,
-            off[0] + knots[i + 1].leftX,
-            off[1] + knots[i + 1].leftY,
-            off[0] + knots[i + 1].x,
-            off[1] + knots[i + 1].y
-          )
-          ctx.stroke()
-
-          circle(ctx, off[0] + knots[i].x, off[1] + knots[i].y, 3)
-          circle(ctx, off[0] + knots[i].rightX, off[1] + knots[i].rightY, 1)
-          circle(
-            ctx,
-            off[0] + knots[i + 1].leftX,
-            off[1] + knots[i + 1].leftY,
-            1
-          )
-          circle(ctx, off[0] + knots[i + 1].x, off[1] + knots[i + 1].y, 3)
-        }
-        if (cycle) {
-          i = knots.length - 1
-          ctx.moveTo(off[0] + knots[i].x, off[1] + knots[i].y)
-          ctx.bezierCurveTo(
-            off[0] + knots[i].rightX,
-            off[1] + knots[i].rightY,
-            off[0] + knots[0].leftX,
-            off[1] + knots[0].leftY,
-            off[0] + knots[0].x,
-            off[1] + knots[0].y
-          )
-          ctx.stroke()
-        }
-      }
-
-      function test(ctx) {
-        ctx.clearRect(0, 0, 600, 770)
-        const points = [
-          { x: 0, y: 0 },
-          { x: 200, y: 133 },
-          { x: 130, y: 300 },
-          { x: 33, y: 233 },
-          { x: 100, y: 167 },
-        ]
-
-        console.time()
-        const cyclic = true
-
-        knots = createHobbyCurve(points, 1, cyclic)
-
-        console.timeEnd()
-
-        console.log(createHobbyData(points, 1, cyclic))
-
-        curve(ctx, knots, [50, 100], cyclic)
-
-        console.log(knots)
-
-        // knots = createHobbyCurve(points, 1, false)
-        // curve(ctx, knots, [300, 100], false)
-      }
-
-      test(ctx)
-      document.addEventListener('click', () => test(ctx))
+      // document.addEventListener('click', () => {
+      console.time()
+      const data = createHobbyCurve(points, 1, false)
+      console.timeEnd()
+      document.getElementById('curve').setAttribute('d', data)
+      // })
     </script>
     <style>
       body,
@@ -111,6 +38,8 @@
   </head>
   <body onload="init()">
     <canvas id="canvas" width="600" height="760"></canvas>
-    <canvas id="canvas-2" width="600" height="760"></canvas>
+    <svg style="position: absolute; top: 100px; left: 50px; overflow: visible">
+      <path id="curve" fill="none" stroke="red"></path>
+    </svg>
   </body>
 </html>
