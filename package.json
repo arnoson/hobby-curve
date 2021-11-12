@@ -11,8 +11,7 @@
     "dev": "esbuild ./src/index.ts --target=esnext --bundle --format=esm --watch --outdir=./dist",
     "build": "esbuild ./src/index.ts --target=esnext --bundle --format=esm --minify --outdir=./dist",
     "test": "jest",
-    "prepublishOnly": "npm run build",
-    "np": "np --no-2fa"
+    "publish": "npm run build && np --no-2fa"
   },
   "author": "",
   "license": "ISC",

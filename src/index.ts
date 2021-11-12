@@ -81,8 +81,7 @@ const createHobbyKnots = (
  */
 export const createHobbyBezier = (
   points: Point[],
-  tension = 1,
-  cyclic = false
+  { tension = 1, cyclic = false } = {}
 ) => {
   const knots = createHobbyKnots(points, tension, cyclic)
   const bezier: { startControl: Point; endControl: Point; point: Point }[] = []
@@ -105,10 +104,9 @@ export const createHobbyBezier = (
  */
 export const createHobbyCurve = (
   points: Point[],
-  tension = 1,
-  cyclic = false
+  { tension = 1, cyclic = false } = {}
 ) => {
-  const bezier = createHobbyBezier(points, tension, cyclic)
+  const bezier = createHobbyBezier(points, { tension, cyclic })
 
   const toString = (point: Point) => [point.x, point.y].join(',')
   const bezierCommands = bezier.map(({ startControl, endControl, point }) =>

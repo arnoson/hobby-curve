@@ -10,8 +10,12 @@ const points = [
 
 describe('createHobbyBezier', () => {
   it('handles cyclic and non-cyclic paths', () => {
-    expect(createHobbyBezier(points, 1, true)).toMatchSnapshot()
-    expect(createHobbyBezier(points, 1, false)).toMatchSnapshot()
+    expect(
+      createHobbyBezier(points, { tension: 1, cyclic: true })
+    ).toMatchSnapshot()
+    expect(
+      createHobbyBezier(points, { tension: 1, cyclic: false })
+    ).toMatchSnapshot()
   })
 
   it('handles 2-point paths', () => {
@@ -19,24 +23,40 @@ describe('createHobbyBezier', () => {
       { x: 0, y: 0 },
       { x: 200, y: 133 },
     ]
-    expect(createHobbyBezier(points, 1, true)).toMatchSnapshot()
-    expect(createHobbyBezier(points, 1, false)).toMatchSnapshot()
+    expect(
+      createHobbyBezier(points, { tension: 1, cyclic: true })
+    ).toMatchSnapshot()
+    expect(
+      createHobbyBezier(points, { tension: 1, cyclic: false })
+    ).toMatchSnapshot()
   })
 
   it('handles low tension', () => {
-    expect(createHobbyBezier(points, 0.3, true)).toMatchSnapshot()
-    expect(createHobbyBezier(points, 0.3, false)).toMatchSnapshot()
+    expect(
+      createHobbyBezier(points, { tension: 0.3, cyclic: true })
+    ).toMatchSnapshot()
+    expect(
+      createHobbyBezier(points, { tension: 0.3, cyclic: false })
+    ).toMatchSnapshot()
   })
 
   it('handles high tension', () => {
-    expect(createHobbyBezier(points, 4, true)).toMatchSnapshot()
-    expect(createHobbyBezier(points, 4, false)).toMatchSnapshot()
+    expect(
+      createHobbyBezier(points, { tension: 4, cyclic: true })
+    ).toMatchSnapshot()
+    expect(
+      createHobbyBezier(points, { tension: 4, cyclic: false })
+    ).toMatchSnapshot()
   })
 })
 
 describe('createHobbyCurve', () => {
   it('creates an svg path description', () => {
-    expect(createHobbyCurve(points, 1, true)).toMatchSnapshot()
-    expect(createHobbyCurve(points, 1, false)).toMatchSnapshot()
+    expect(
+      createHobbyCurve(points, { tension: 1, cyclic: true })
+    ).toMatchSnapshot()
+    expect(
+      createHobbyCurve(points, { tension: 1, cyclic: false })
+    ).toMatchSnapshot()
   })
 })
