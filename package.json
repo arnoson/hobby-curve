@@ -1,6 +1,6 @@
 {
   "name": "hobby-curve",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A tiny typescript implementation of the hobby curve algorithm without dependencies.",
   "main": "dist/index.js",
   "files": [
