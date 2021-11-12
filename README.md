@@ -1,6 +1,6 @@
 # Hobby Curve
 
-A typescript implementation of the hobby curve algorithm.
+A tiny (1.3kb gzip) typescript implementation of the hobby curve algorithm without dependencies.
 
 ## Install
 
