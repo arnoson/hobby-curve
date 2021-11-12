@@ -27,7 +27,7 @@ const svg = `<svg><path d="${pathDescription}" /></svg>`
 document.body.innerHtml = svg
 ```
 
-If you don't need an svg path you can also create only the bezier points:
+If you don't need an svg path, you can create just the bézier points:
 
 ```js
 import { createHobbyBezier } from 'hobby-curve'
